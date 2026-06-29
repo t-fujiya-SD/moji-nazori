@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="もじなぞり">
+<meta name="theme-color" content="#aee4ff">
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>采生くんの もじ・すうじ なぞり</title>
+<style>
+  :root{
+    --sky-top:#aee4ff; --sky-bottom:#e3f6ff;
+    --ink:#33445e; --ink-soft:#6b7c96;
+    --sun:#ffcf3f; --coral:#ff7a59; --coral-dark:#e85f3e;
+    --grass:#74d680; --grass-dark:#5bbf68;
+    --card:#ffffff; --line:#cfe0ef;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+  html,body{margin:0; padding:0; height:100%; overscroll-behavior:none;}
+  body{
+    font-family:'Hiragino Maru Gothic ProN','ヒラギノ丸ゴ ProN W4','Rounded Mplus 1c',-apple-system,sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,var(--sky-top),var(--sky-bottom) 60%);
+    overflow:hidden; -webkit-text-size-adjust:100%;
+    position:fixed; inset:0; width:100%; touch-action:none;
+  }
+  #app{height:100vh; height:100dvh; width:100%; position:relative; overflow:hidden;}
+  .screen{height:100%; width:100%; display:flex; flex-direction:column; align-items:center; position:relative;}
+  .cloud{position:absolute; font-size:42px; opacity:.85; animation:drift 24s linear infinite;}
+  .cloud.c2{font-size:30px; opacity:.7; animation-duration:32s;}
+  @keyframes drift{from{transform:translateX(-20vw)} to{transform:translateX(120vw)}}
+
+  .btn{border:none; border-radius:22px; font-family:inherit; font-weight:800; color:#fff; cursor:pointer;
+    padding:16px 28px; font-size:21px; background:var(--coral); box-shadow:0 6px 0 var(--coral-dark); transition:transform .07s, box-shadow .07s;}
+  .btn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--coral-dark);}
+  .btn.big{font-size:27px; padding:20px 42px; border-radius:28px;}
+  .btn.grass{background:var(--grass); box-shadow:0 6px 0 var(--grass-dark);}
+  .btn.grass:active{box-shadow:0 2px 0 var(--grass-dark);}
+  .btn.ghost{background:#fff; color:var(--ink); box-shadow:0 5px 0 var(--line); font-size:18px; padding:14px 22px;}
+  .btn.ghost:active{box-shadow:0 1px 0 var(--line);}
+  .speaker{width:72px; height:72px; border-radius:50%; border:none; background:var(--sun);
+    box-shadow:0 6px 0 #d6a92a; font-size:34px; cursor:pointer; transition:transform .07s, box-shadow .07s;}
+  .speaker:active{transform:translateY(4px); box-shadow:0 2px 0 #d6a92a;}
+
+  /* title */
+  .title-screen{justify-content:center; gap:6px;}
+  .title-name{font-size:22px; color:var(--ink-soft); font-weight:800;}
+  .title{font-size:38px; margin:0; text-shadow:0 3px 0 #fff; text-align:center; line-height:1.2;}
+  .title-train{font-size:66px; margin:10px 0 22px; animation:bob 1.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .hint{color:var(--ink-soft); font-size:15px; margin-top:20px; padding:0 24px; text-align:center;}
+
+  /* category select */
+  .topbar{width:100%; padding:16px 16px 4px; text-align:center; position:relative;}
+  .topbar h2{margin:0; font-size:21px;}
+  .cats{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:14px; padding:10px 22px 30px; width:100%;
+    overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior:contain;}
+  .cats::-webkit-scrollbar{display:none;}
+  .catbtn{width:100%; max-width:360px; border:none; border-radius:24px; cursor:pointer; padding:22px;
+    font-family:inherit; font-weight:800; font-size:26px; color:#fff; box-shadow:0 6px 0 rgba(0,0,0,.18);
+    display:flex; align-items:center; justify-content:space-between; transition:transform .07s, box-shadow .07s;}
+  .catbtn:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  .catbtn small{font-size:15px; font-weight:800; opacity:.92;}
+  .catbtn .ex{font-size:30px;}
+
+  /* voice picker */
+  .voicelist{flex:1; width:100%; max-width:430px; margin:0 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior:contain; padding:8px 18px 28px; display:flex; flex-direction:column; gap:10px;}
+  .voicelist::-webkit-scrollbar{display:none;}
+  .vrow{display:flex; align-items:center; gap:12px; border:none; border-radius:18px; background:#fff; box-shadow:0 4px 0 var(--line); padding:14px 18px; font-family:inherit; font-weight:800; font-size:20px; color:var(--ink); cursor:pointer; transition:transform .07s, box-shadow .07s;}
+  .vrow:active{transform:translateY(2px); box-shadow:0 2px 0 var(--line);}
+  .vrow .ve{font-size:28px;}
+  .vrow.sel{background:#eafff0; box-shadow:0 4px 0 var(--grass-dark);}
+  .vrow .tag{margin-left:auto; font-size:13px; color:var(--ink-soft); font-weight:800;}
+  .vrow.sel .tag{color:var(--grass-dark);}
+
+  /* char grid */
+  .gridhead{width:100%; padding:12px 16px 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .back{font-size:16px; color:var(--ink-soft); background:none; border:none; font-family:inherit; font-weight:800; cursor:pointer;}
+  .count{font-size:15px; color:var(--ink-soft); font-weight:800;}
+  .mytrain{width:100%; padding:2px 14px 8px; display:flex; gap:4px; align-items:center; overflow-x:auto; flex-shrink:0; touch-action:pan-x;}
+  .mytrain::-webkit-scrollbar{display:none;}
+  .car{flex:0 0 auto; min-width:46px; height:40px; border-radius:11px 11px 7px 7px; background:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; box-shadow:0 3px 0 var(--line);}
+  .car.engine{background:var(--coral); box-shadow:0 3px 0 var(--coral-dark); font-size:22px;}
+  .coupler{flex:0 0 auto; width:7px; height:4px; background:#9fb2c9; border-radius:2px;}
+  .scroll{flex:1; width:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; overscroll-behavior:contain; padding:6px 14px 36px;}
+  .scroll::-webkit-scrollbar{display:none;}
+  .cgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(62px,1fr)); gap:12px; max-width:520px; margin:0 auto;}
+  .cc{aspect-ratio:1/1; background:#fff; border-radius:18px; border:4px solid #e7eef6; display:flex; align-items:center; justify-content:center;
+    font-size:34px; font-weight:800; color:var(--ink); cursor:pointer; box-shadow:0 5px 0 var(--line); transition:transform .07s, box-shadow .07s; position:relative;}
+  .cc:active{transform:translateY(3px); box-shadow:0 2px 0 var(--line);}
+  .cc.done{border-color:var(--grass); background:#eafff0;}
+  .cc .ck{position:absolute; top:-8px; right:-8px; font-size:22px;}
+  /* word cells (ことば mode) */
+  .cgrid.wordgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); max-width:560px;}
+  .cc.word{aspect-ratio:auto; flex-direction:column; gap:2px; padding:12px 6px;}
+  .cc.word .cc-emo{font-size:36px; line-height:1;}
+  .cc.word .cc-word{font-size:17px; font-weight:800; color:var(--ink);}
+  .trace-label .hint-emo{font-size:30px; vertical-align:middle;}
+  .bigc.word{font-size:26px;}
+  .complete .gotc.word{font-size:34px;}
+
+  /* trace */
+  .play-head{width:100%; padding:14px 16px 4px; display:flex; align-items:center; justify-content:space-between;}
+  .bigc{font-size:40px; font-weight:800;}
+  .trace-label{font-size:17px; color:var(--ink-soft); font-weight:800; padding:2px 0 6px;}
+  .canvas-wrap{flex:1; width:100%; display:flex; align-items:center; justify-content:center; padding:0 14px;}
+  canvas{background:#fff; border-radius:24px; box-shadow:0 8px 22px rgba(40,60,90,.14); touch-action:none; border:3px solid #eef3f8;}
+  .footer-btns{display:flex; gap:12px; align-items:center; justify-content:center; padding:14px 0; flex-wrap:wrap;}
+  .footer-btns .done-btn{font-size:20px; padding:14px 30px;}
+
+  /* complete */
+  .complete{justify-content:center; gap:8px; text-align:center; padding:0 20px;}
+  .complete .big-emoji{font-size:74px; animation:bob 1.4s ease-in-out infinite;}
+  .complete h2{font-size:32px; margin:4px 0;}
+  .complete .gotc{font-size:64px; font-weight:800;}
+  .new-car{font-size:16px; color:var(--ink-soft);}
+  .new-car .car{display:inline-flex; vertical-align:middle; margin:0 4px;}
+  /* バッジ祝福 */
+  .badge-won{display:flex; align-items:center; gap:12px; justify-content:center; background:#fff7df; border:3px solid #ffcf3f; border-radius:18px; padding:10px 18px; margin:8px auto 2px; max-width:340px; box-shadow:0 5px 0 #e7b730; font-size:40px; font-weight:800; animation:pop .5s cubic-bezier(.34,1.56,.64,1);}
+  .badge-won div{font-size:18px; color:var(--ink); line-height:1.25; text-align:left;}
+  .badge-won small{display:block; font-size:13px; color:var(--ink-soft);}
+  .badge-won.grand{background:#fff0f6; border-color:#ff7aa8; box-shadow:0 5px 0 #e85f8e;}
+  @keyframes pop{0%{transform:scale(.5); opacity:0;}100%{transform:scale(1); opacity:1;}}
+  /* がんばりひょう */
+  .psum{text-align:center; font-size:16px; font-weight:800; color:var(--ink); margin:4px 0 14px;}
+  .psum b{color:var(--coral);}
+  .prow{display:flex; align-items:center; gap:12px; max-width:460px; margin:0 auto 12px; padding:0 6px;}
+  .pmedal{flex:0 0 auto; width:52px; height:52px; border-radius:50%; border:4px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:23px; font-weight:800; box-shadow:0 3px 0 rgba(0,0,0,.08);}
+  .pmedal.earned{background:#fff7df; box-shadow:0 3px 0 #e7b730;}
+  .pmain{flex:1; min-width:0;}
+  .plabel{font-size:16px; font-weight:800; color:var(--ink); margin-bottom:5px;}
+  .plabel small{color:var(--ink-soft); font-weight:800;}
+  .ptrack{position:relative; height:16px; background:#e7eef6; border-radius:10px;}
+  .pfill{height:100%; border-radius:10px; transition:width .4s;}
+  .ploco{position:absolute; top:50%; transform:translate(-50%,-58%); font-size:18px; line-height:1;}
+  .confetti{position:fixed; top:-20px; width:12px; height:18px; border-radius:3px; z-index:50; pointer-events:none;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg); opacity:.9;}}
+
+  /* collection train (grows by 1 car per clear) */
+  .ctrain{display:flex; align-items:flex-end; gap:2px; overflow-x:auto; max-width:100%; padding:10px 14px 14px; flex-shrink:0; touch-action:pan-x;}
+  .ctrain::-webkit-scrollbar{display:none;}
+  .ceng{position:relative; flex:0 0 auto; width:52px; height:40px; filter:drop-shadow(0 2px 1px rgba(40,60,90,.18));}
+  .ceng-body{position:absolute; left:0; right:0; top:0; bottom:7px; background:linear-gradient(#ff9170,#e85f3e); border:1.5px solid #cf4d2e; border-radius:17px 9px 7px 7px; box-shadow:inset 0 2px 2px rgba(255,255,255,.35);}
+  .ceng-win{position:absolute; left:6px; top:6px; width:15px; height:12px; background:linear-gradient(#dff1fc,#bfe3f7); border:1px solid #a9cbe0; border-radius:6px 3px 3px 3px;}
+  .ceng-light{position:absolute; left:5px; bottom:3px; width:7px; height:5px; background:#fff6c0; border-radius:2px; box-shadow:0 0 6px #ffe066;}
+  .ccar{position:relative; flex:0 0 auto; width:46px; height:38px; filter:drop-shadow(0 2px 1px rgba(40,60,90,.18));}
+  .ccar-body{position:absolute; left:0; right:0; top:0; bottom:7px; background:linear-gradient(#fdfeff,#d7e2ec); border:1.5px solid #bcc9d6; border-radius:8px 8px 6px 6px; overflow:hidden; box-shadow:inset 0 2px 2px rgba(255,255,255,.55);}
+  .ccar-win{position:absolute; left:4px; right:4px; top:4px; height:8px; background:linear-gradient(#3c5c7a,#27405a); border-radius:3px;}
+  .ccar-stripe{position:absolute; left:0; right:0; bottom:4px; display:flex; flex-direction:column; gap:1px;}
+  .ccar-stripe i{display:block; height:3.5px;}
+  .ccar-wheel{position:absolute; bottom:0; width:9px; height:9px; background:radial-gradient(circle at 40% 35%, #6f6f6f, #222); border:1.5px solid #4a4a4a; border-radius:50%;}
+  .ccpl{flex:0 0 auto; width:5px; height:4px; background:#8a99a8; align-self:flex-end; margin-bottom:14px; border-radius:2px;}
+  .ccar.newcar{animation:coupleIn .6s cubic-bezier(.34,1.56,.64,1);}
+  @keyframes coupleIn{0%{transform:translateX(50px) translateY(-6px); opacity:0;}60%{transform:translateX(-3px) translateY(0);}100%{transform:translateX(0); opacity:1;}}
+  .cnone{font-size:13px; color:var(--ink-soft); align-self:center; padding-left:6px;}
+  .newline{font-size:18px; font-weight:800; color:var(--ink); margin:2px 0;}
+  .newline small{font-size:13px; color:var(--ink-soft); font-weight:800;}
+
+  /* passing JR-line train (reward) */
+  .jr-train{position:fixed; left:0; z-index:60; pointer-events:none; display:flex; align-items:flex-end; gap:2px; will-change:transform;}
+  .jr-car{position:relative; width:84px; height:52px; flex:0 0 auto;}
+  .jr-body{position:absolute; top:0; left:0; right:0; height:44px; background:linear-gradient(#fcfeff,#d9e3ec); border:2px solid #c2ceda; border-radius:8px; overflow:hidden;}
+  .jr-car.front.nose-right .jr-body{border-top-right-radius:22px; border-bottom-right-radius:4px;}
+  .jr-car.front.nose-left .jr-body{border-top-left-radius:22px; border-bottom-left-radius:4px;}
+  .jr-win{position:absolute; top:7px; left:7px; right:7px; height:12px; display:flex; gap:3px;}
+  .jr-win span{flex:1; background:#27405a; border-radius:2px; opacity:.92;}
+  .jr-stripe{position:absolute; left:0; right:0; top:56%; transform:translateY(-50%); display:flex; flex-direction:column; gap:1px;}
+  .jr-stripe i{display:block; height:5px;}
+  .jr-shield{position:absolute; top:8px; width:14px; height:15px; background:#cfe9f7; border:1px solid #a9cbe0; border-radius:3px;}
+  .nose-right .jr-shield{right:5px;} .nose-left .jr-shield{left:5px;}
+  .jr-head{position:absolute; bottom:10px; width:7px; height:5px; background:#fff6c0; border-radius:2px; box-shadow:0 0 6px #ffe066;}
+  .nose-right .jr-head{right:3px;} .nose-left .jr-head{left:3px;}
+  .jr-bogie{position:absolute; bottom:0; width:14px; height:14px; background:#2b2b2b; border:2px solid #585858; border-radius:50%;}
+  .jr-coupler{align-self:flex-end; width:6px; height:5px; background:#8a99a8; border-radius:2px; margin-bottom:20px; flex:0 0 auto;}
+  @keyframes jr-go-r{from{transform:translateX(-118vw)} to{transform:translateX(118vw)}}
+  @keyframes jr-go-l{from{transform:translateX(118vw)} to{transform:translateX(-118vw)}}
+  .jr-cap{position:fixed; top:12%; left:50%; transform:translate(-50%,-10px); background:#fff; border-radius:16px; padding:9px 18px; font-size:19px; font-weight:800; color:#33445e; box-shadow:0 8px 18px rgba(0,0,0,.18); z-index:70; opacity:0; transition:opacity .3s, transform .3s; pointer-events:none; display:flex; align-items:center; gap:9px;}
+  .jr-cap.show{opacity:1; transform:translate(-50%,0);}
+  .jr-cap b{width:15px; height:15px; border-radius:50%; display:inline-block;}
+
+  /* reward scene: a big train crosses slowly, recognizable by type */
+  .reward-screen{justify-content:center; overflow:hidden;}
+  .reward-cap{position:fixed; top:13%; left:50%; transform:translateX(-50%); background:#fff; border-radius:18px;
+    padding:12px 22px; font-size:22px; font-weight:800; color:var(--ink); box-shadow:0 8px 20px rgba(0,0,0,.16);
+    display:flex; align-items:center; gap:10px; z-index:6; white-space:nowrap; max-width:92vw;}
+  .reward-cap b{width:18px; height:18px; border-radius:50%; display:inline-block; flex:0 0 auto;}
+  .reward-hint{position:fixed; bottom:9%; left:50%; transform:translateX(-50%); color:var(--ink-soft); font-size:16px; font-weight:800; z-index:6;}
+  .bigtrain{position:fixed; top:42%; left:0; display:flex; align-items:flex-end; gap:3px; z-index:5;
+    will-change:transform; transform:translateX(-135vw); animation:bt-cross 3.8s linear forwards;}
+  @keyframes bt-cross{from{transform:translateX(-135vw)} to{transform:translateX(135vw)}}
+  .bigtrain.imgmode{top:34%; align-items:center;}
+  .bt-img{width:78vw; max-width:380px; aspect-ratio:4 / 3; height:auto; object-fit:contain; display:block; filter:drop-shadow(0 6px 4px rgba(40,60,90,.2));}
+  .bt-car{position:relative; width:150px; height:92px; flex:0 0 auto; filter:drop-shadow(0 5px 3px rgba(40,60,90,.22));}
+  .bt-body{position:absolute; left:0; right:0; top:16px; bottom:16px; background:linear-gradient(#ffffff,#dae4ee);
+    border:2.5px solid #c2ceda; border-radius:12px 12px 8px 8px; overflow:hidden;}
+  .bt-win{position:absolute; top:9px; left:12px; right:12px; height:20px; display:flex; gap:5px;}
+  .bt-win span{flex:1; background:linear-gradient(#3c5c7a,#22384f); border-radius:4px; opacity:.95;}
+  .bt-stripe{position:absolute; left:0; right:0; bottom:12px; display:flex; flex-direction:column; gap:2px;}
+  .bt-stripe i{display:block; height:7px;}
+  .bt-head{position:absolute; top:50%; transform:translateY(-50%); right:6px; width:12px; height:9px;
+    background:#fff6c0; border-radius:3px; box-shadow:0 0 12px 3px #ffe066; z-index:3;}
+  .bt-wheel{position:absolute; bottom:0; width:18px; height:18px; background:radial-gradient(circle at 40% 35%,#777,#222);
+    border:2.5px solid #4a4a4a; border-radius:50%;}
+  .bt-coupler{align-self:flex-end; width:8px; height:7px; background:#8a99a8; border-radius:2px; margin-bottom:30px; flex:0 0 auto;}
+  .bt-pan{position:absolute; top:1px; left:38%; width:26px; height:15px; z-index:2;}
+  .bt-pan::before{content:""; position:absolute; top:0; left:-4px; right:-4px; height:3px; background:#333; border-radius:2px;}
+  .bt-pan::after{content:""; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:12px solid #4a4a4a;}
+  /* nose shape by train type (front car leads on the right) */
+  .kind-loc .bt-front .bt-body{border-radius:12px 16px 8px 8px;}
+  .kind-ltd .bt-front{width:166px;}
+  .kind-ltd .bt-front .bt-body{clip-path:polygon(0 0, 78% 0, 100% 35%, 100% 65%, 78% 100%, 0 100%);}
+  .kind-sk  .bt-front{width:200px;}
+  .kind-sk  .bt-front .bt-body{clip-path:polygon(0 0, 55% 0, 100% 47%, 100% 53%, 55% 100%, 0 100%);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =====================================================================
+   采生くんの もじ・すうじ なぞり
+   方式: 文字フォントを薄く表示 → その形をどれだけ塗れたかで判定
+        （手書き認識ではない。どんな文字でも対応できる）
+   判定は「ペンを離したとき」に行う → なぞり途中で切れない
+   ===================================================================== */
+
+const NUMWORD={'1':'one','2':'two','3':'three','4':'four','5':'five','6':'six','7':'seven','8':'eight','9':'nine','0':'zero'};
+const CATS=[
+  { key:'num',  label:'すうじ',   ex:'1 2 3', color:'#ff8a3d', lang:'en-US',
+    chars:['1','2','3','4','5','6','7','8','9','0'], say:c=>NUMWORD[c]||c },
+  { key:'hira', label:'ひらがな', ex:'あ い う', color:'#3fb6a8', lang:'ja-JP',
+    chars:['あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ','た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ','ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'],
+    say:c=>c },
+  { key:'abc',  label:'ABC',      ex:'A B C', color:'#4c8dff', lang:'en-US',
+    chars:['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'],
+    say:c=>c },
+  { key:'kata', label:'カタカナ', ex:'ア イ ウ', color:'#f0883e', lang:'ja-JP',
+    chars:['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'],
+    say:c=>c },
+  // ことば（絵を見ながら なぞる）
+  { key:'fruit', label:'くだもの・やさい', ex:'🍎🥕', color:'#ff6f61', lang:'ja-JP', word:true,
+    items:[['りんご','🍎'],['みかん','🍊'],['バナナ','🍌'],['ぶどう','🍇'],['いちご','🍓'],['もも','🍑'],['さくらんぼ','🍒'],['すいか','🍉'],['メロン','🍈'],['パイナップル','🍍'],['レモン','🍋'],['キウイ','🥝'],['マンゴー','🥭'],['なし','🍐'],['ブルーベリー','🫐'],['ココナッツ','🥥'],['にんじん','🥕'],['トマト','🍅'],['なす','🍆'],['とうもろこし','🌽'],['じゃがいも','🥔'],['さつまいも','🍠'],['ピーマン','🫑'],['きゅうり','🥒'],['ブロッコリー','🥦'],['キャベツ','🥬'],['たまねぎ','🧅'],['にんにく','🧄'],['きのこ','🍄'],['とうがらし','🌶️'],['アボカド','🥑'],['かぼちゃ','🎃'],['えだまめ','🫛'],['ピーナッツ','🥜'],['だいこん',''],['ねぎ',''],['ごぼう',''],['れんこん',''],['かき','']] },
+  { key:'animal', label:'どうぶつ', ex:'🐶🐰', color:'#7c9cf0', lang:'ja-JP', word:true,
+    items:[['いぬ','🐶'],['ねこ','🐱'],['ねずみ','🐭'],['うさぎ','🐰'],['きつね','🦊'],['くま','🐻'],['パンダ','🐼'],['コアラ','🐨'],['とら','🐯'],['ライオン','🦁'],['うし','🐮'],['ぶた','🐷'],['かえる','🐸'],['さる','🐵'],['にわとり','🐔'],['ペンギン','🐧'],['とり','🐦'],['ひよこ','🐤'],['あひる','🦆'],['わし','🦅'],['ふくろう','🦉'],['こうもり','🦇'],['おおかみ','🐺'],['いのしし','🐗'],['うま','🐴'],['ユニコーン','🦄'],['かめ','🐢'],['へび','🐍'],['とかげ','🦎'],['きょうりゅう','🦖'],['たこ','🐙'],['いか','🦑'],['えび','🦐'],['かに','🦀'],['ふぐ','🐡'],['さかな','🐟'],['いるか','🐬'],['くじら','🐳'],['さめ','🦈'],['わに','🐊'],['ぞう','🐘'],['かば','🦛'],['さい','🦏'],['らくだ','🐫'],['きりん','🦒'],['カンガルー','🦘'],['ひつじ','🐑'],['やぎ','🐐'],['しか','🦌'],['はりねずみ','🦔'],['りす','🐿️'],['あらいぐま','🦝']] },
+  { key:'bug', label:'こんちゅう', ex:'🦋🐝', color:'#6fbf73', lang:'ja-JP', word:true,
+    items:[['ちょうちょ','🦋'],['むし','🐛'],['かたつむり','🐌'],['てんとうむし','🐞'],['あり','🐜'],['はち','🐝'],['ばった','🦗'],['くも','🕷️'],['かぶとむし','🪲'],['くわがた','🪲'],['ごきぶり','🪳'],['か','🦟'],['はえ','🪰'],['さそり','🦂'],['こおろぎ','🦗'],['かまきり',''],['とんぼ',''],['せみ',''],['だんごむし',''],['あおむし',''],['けむし',''],['みみず',''],['すずむし',''],['みつばち','']] },
+  { key:'vehicle', label:'のりもの', ex:'🚃✈️', color:'#4cc4d6', lang:'ja-JP', word:true,
+    items:[['でんしゃ','🚃'],['しんかんせん','🚅'],['とっきゅう','🚄'],['きしゃ','🚂'],['ちかてつ','🚇'],['ろめんでんしゃ','🚋'],['バス','🚌'],['タクシー','🚕'],['くるま','🚗'],['トラック','🚚'],['きゅうきゅうしゃ','🚑'],['しょうぼうしゃ','🚒'],['パトカー','🚓'],['じてんしゃ','🚲'],['バイク','🏍️'],['ひこうき','✈️'],['ヘリコプター','🚁'],['ふね','⛴️'],['ヨット','⛵'],['ボート','🚤'],['ロケット','🚀'],['モノレール','🚝'],['ロープウェイ','🚡'],['ケーブルカー','🚠'],['トラクター','🚜'],['キックボード','🛴'],['スクーター','🛵']] },
+  { key:'sport', label:'スポーツ', ex:'⚽🏀', color:'#f0a64c', lang:'ja-JP', word:true,
+    items:[['サッカー','⚽'],['やきゅう','⚾'],['バスケ','🏀'],['テニス','🎾'],['バレー','🏐'],['ラグビー','🏉'],['ゴルフ','⛳'],['たっきゅう','🏓'],['バドミントン','🏸'],['ボウリング','🎳'],['すいえい','🏊'],['スケート','⛸️'],['スキー','⛷️'],['スノーボード','🏂'],['じゅうどう','🥋'],['ボクシング','🥊'],['サーフィン','🏄'],['サイクリング','🚴'],['ジョギング','🏃'],['とざん','🧗'],['じょうば','🏇'],['アイスホッケー','🏒'],['ホッケー','🏑'],['アーチェリー','🏹'],['つり','🎣'],['ダイビング','🤿'],['たいそう','🤸']] },
+];
+CATS.forEach(c=>{ if(c.items){ c.chars=c.items.map(i=>i[0]); c.pic={}; c.items.forEach(i=>{ if(i[1]) c.pic[i[0]]=i[1]; }); if(!c.say) c.say=x=>x; } });
+function catOf(k){ return CATS.find(c=>c.key===k); }
+function picOf(cat,ch){ return (cat&&cat.pic&&cat.pic[ch])||''; }
+
+/* 書き順データ: char -> [[x,y,dx,dy], ...]  x,y=画の始点(キャンバス0..1), dx,dy=最初に進む向き */
+const STROKES={
+  // すうじ
+  '0':[[0.50,0.22,-0.35,0.25]],
+  '1':[[0.47,0.26,0,1]],
+  '2':[[0.37,0.31,0.42,-0.16]],
+  '3':[[0.38,0.30,0.42,-0.12]],
+  '4':[[0.52,0.22,-0.36,0.5],[0.60,0.18,0,1]],
+  '5':[[0.42,0.24,0,1],[0.42,0.18,1,0]],
+  '6':[[0.58,0.24,-0.32,0.26]],
+  '7':[[0.36,0.25,0.42,0.05]],
+  '8':[[0.50,0.22,-0.30,0.28]],
+  '9':[[0.56,0.27,-0.30,0]],
+  // ひらがな（標準的な書き順。バッジ位置は目安）
+  'あ':[[0.34,0.30,0.4,0],[0.50,0.20,-0.05,1],[0.64,0.42,-0.3,0.4]],
+  'い':[[0.34,0.28,0.05,1],[0.64,0.30,0.05,0.7]],
+  'う':[[0.46,0.22,0.25,0],[0.40,0.34,0.3,0.2]],
+  'え':[[0.46,0.22,0.2,0],[0.34,0.40,0.35,0.1]],
+  'お':[[0.34,0.30,0.4,0],[0.48,0.22,-0.05,1],[0.66,0.30,0.15,0.2]],
+  'か':[[0.30,0.30,0.35,0.05],[0.40,0.30,-0.2,0.5],[0.68,0.30,0.1,0.3]],
+  'き':[[0.32,0.28,0.4,-0.05],[0.30,0.42,0.42,-0.05],[0.56,0.22,-0.2,0.6],[0.44,0.58,0.15,0.2]],
+  'く':[[0.58,0.26,-0.3,0.3]],
+  'け':[[0.32,0.26,0.05,1],[0.55,0.30,0.25,0],[0.62,0.28,0.05,0.7]],
+  'こ':[[0.36,0.32,0.4,0],[0.34,0.56,0.42,0]],
+  'さ':[[0.32,0.30,0.4,-0.05],[0.52,0.22,-0.2,0.6],[0.42,0.54,0.15,0.2]],
+  'し':[[0.46,0.22,0,1]],
+  'す':[[0.34,0.32,0.4,0],[0.52,0.24,-0.05,1]],
+  'せ':[[0.30,0.36,0.42,-0.05],[0.42,0.26,0,1],[0.62,0.30,0.05,0.7]],
+  'そ':[[0.34,0.28,0.35,0.05]],
+  'た':[[0.30,0.30,0.35,0],[0.40,0.24,-0.05,1],[0.62,0.34,0.3,0],[0.62,0.54,0.2,0.1]],
+  'ち':[[0.34,0.30,0.4,-0.05],[0.50,0.24,-0.1,0.6]],
+  'つ':[[0.34,0.34,0.4,0.1]],
+  'て':[[0.34,0.30,0.4,0]],
+  'と':[[0.44,0.30,0.1,0.5],[0.40,0.46,0.3,0.2]],
+  'な':[[0.30,0.30,0.35,0],[0.38,0.24,-0.05,1],[0.62,0.32,0.2,0],[0.62,0.52,0.2,0.15]],
+  'に':[[0.32,0.26,0.05,1],[0.56,0.34,0.3,0],[0.56,0.56,0.3,0]],
+  'ぬ':[[0.36,0.30,-0.05,1],[0.50,0.26,0.2,0.5]],
+  'ね':[[0.32,0.26,0.05,1],[0.46,0.30,0.2,0.5]],
+  'の':[[0.62,0.30,-0.3,0]],
+  'は':[[0.30,0.26,0.05,1],[0.56,0.32,0.3,0],[0.62,0.28,0.05,0.7]],
+  'ひ':[[0.30,0.42,0.4,0.1]],
+  'ふ':[[0.48,0.24,0,0.5],[0.34,0.44,-0.2,0.2],[0.52,0.42,0.2,0.3],[0.66,0.46,0.1,0.3]],
+  'へ':[[0.32,0.50,0.3,-0.25]],
+  'ほ':[[0.30,0.26,0.05,1],[0.56,0.30,0.3,0],[0.56,0.46,0.3,0],[0.62,0.28,0.05,0.7]],
+  'ま':[[0.30,0.30,0.4,0],[0.30,0.46,0.4,0],[0.50,0.22,-0.05,1]],
+  'み':[[0.40,0.28,-0.05,1],[0.52,0.50,-0.2,0.2]],
+  'む':[[0.32,0.34,0.4,0],[0.46,0.26,-0.05,1],[0.66,0.40,0.1,0.3]],
+  'め':[[0.36,0.30,-0.05,1],[0.50,0.26,0.2,0.5]],
+  'も':[[0.46,0.24,0,1],[0.32,0.38,0.4,0],[0.30,0.52,0.4,0]],
+  'や':[[0.36,0.34,0.3,0.1],[0.56,0.24,0.05,1],[0.60,0.40,0.1,0.4]],
+  'ゆ':[[0.40,0.30,0.2,0.4],[0.56,0.24,0,1]],
+  'よ':[[0.50,0.22,0,1],[0.34,0.42,0.4,0]],
+  'ら':[[0.42,0.26,0.1,0.2],[0.50,0.40,-0.2,0.3]],
+  'り':[[0.38,0.28,0.05,0.7],[0.60,0.26,0.05,1]],
+  'る':[[0.34,0.30,0.35,0.05]],
+  'れ':[[0.32,0.26,0.05,1],[0.46,0.30,0.2,0.5]],
+  'ろ':[[0.34,0.30,0.35,0.05]],
+  'わ':[[0.32,0.26,0.05,1],[0.46,0.30,0.2,0.5]],
+  'を':[[0.32,0.30,0.4,0],[0.50,0.24,-0.15,0.5],[0.40,0.54,0.3,0.05]],
+  'ん':[[0.36,0.34,0.1,0.5]],
+  // アルファベット（標準的な書き順。E・M・V・W・Z等は流派あり）
+  'A':[[0.50,0.20,-0.28,0.6],[0.50,0.20,0.28,0.6],[0.38,0.56,1,0]],
+  'B':[[0.34,0.20,0,1],[0.34,0.20,0.55,0.12]],
+  'C':[[0.63,0.30,-0.35,-0.15]],
+  'D':[[0.34,0.20,0,1],[0.34,0.20,0.55,0.18]],
+  'E':[[0.36,0.20,0,1],[0.36,0.20,1,0],[0.36,0.50,1,0],[0.36,0.80,1,0]],
+  'F':[[0.36,0.20,0,1],[0.36,0.20,1,0],[0.36,0.50,1,0]],
+  'G':[[0.63,0.30,-0.35,-0.15],[0.62,0.55,-0.35,0]],
+  'H':[[0.34,0.20,0,1],[0.66,0.20,0,1],[0.34,0.50,1,0]],
+  'I':[[0.50,0.20,0,1]],
+  'J':[[0.60,0.20,0,1]],
+  'K':[[0.36,0.20,0,1],[0.36,0.50,0.4,-0.4],[0.36,0.52,0.4,0.42]],
+  'L':[[0.36,0.20,0,1]],
+  'M':[[0.32,0.20,0,1],[0.32,0.20,0.2,0.45],[0.50,0.62,0.2,-0.45],[0.68,0.20,0,1]],
+  'N':[[0.34,0.20,0,1],[0.34,0.20,0.32,0.6],[0.66,0.20,0,1]],
+  'O':[[0.50,0.20,-0.3,0.22]],
+  'P':[[0.34,0.20,0,1],[0.34,0.20,0.55,0.15]],
+  'Q':[[0.50,0.20,-0.3,0.22],[0.58,0.62,0.28,0.28]],
+  'R':[[0.34,0.20,0,1],[0.34,0.20,0.5,0.15],[0.42,0.52,0.3,0.4]],
+  'S':[[0.62,0.30,-0.35,-0.1]],
+  'T':[[0.30,0.20,1,0],[0.50,0.20,0,1]],
+  'U':[[0.34,0.20,0,1]],
+  'V':[[0.36,0.20,0.16,0.6],[0.64,0.20,-0.16,0.6]],
+  'W':[[0.30,0.20,0.1,0.6],[0.42,0.80,0.1,-0.6],[0.50,0.20,0.1,0.6],[0.62,0.80,0.1,-0.6]],
+  'X':[[0.36,0.20,0.3,0.6],[0.64,0.20,-0.3,0.6]],
+  'Y':[[0.36,0.20,0.14,0.32],[0.64,0.20,-0.14,0.32],[0.50,0.52,0,0.5]],
+  'Z':[[0.34,0.22,1,0]],
+};
+let ORDER_ON=true;
+
+/* ---------- state / storage ---------- */
+const SAVE_KEY='moji-nazori-v1';
+let state={ done:{} };  // done['num:1']=true
+const dk=(k,c)=>k+':'+c;
+function loadState(){ try{ const v=localStorage.getItem(SAVE_KEY); if(v) state=JSON.parse(v); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
+
+/* ---------- audio ---------- */
+/* ずんだもん（VOICEVOX）音声クリップ。voice/ フォルダに同梱。クレジット: VOICEVOX:ずんだもん */
+const ZUNDA='ずんだもん';
+const VV_EMO={'ずんだもん':'🫛','青山龍星':'🌟','春日部つむぎ':'👧','四国めたん':'🫖'};
+let VVS={"ずんだもん":{"あ":"voice/000.mp3","い":"voice/001.mp3","う":"voice/002.mp3","え":"voice/003.mp3","お":"voice/004.mp3","か":"voice/005.mp3","き":"voice/006.mp3","く":"voice/007.mp3","け":"voice/008.mp3","こ":"voice/009.mp3","さ":"voice/010.mp3","し":"voice/011.mp3","す":"voice/012.mp3","せ":"voice/013.mp3","そ":"voice/014.mp3","た":"voice/015.mp3","ち":"voice/016.mp3","つ":"voice/017.mp3","て":"voice/018.mp3","と":"voice/019.mp3","な":"voice/020.mp3","に":"voice/021.mp3","ぬ":"voice/022.mp3","ね":"voice/023.mp3","の":"voice/024.mp3","は":"voice/025.mp3","ひ":"voice/026.mp3","ふ":"voice/027.mp3","へ":"voice/028.mp3","ほ":"voice/029.mp3","ま":"voice/030.mp3","み":"voice/031.mp3","む":"voice/032.mp3","め":"voice/033.mp3","も":"voice/034.mp3","や":"voice/035.mp3","ゆ":"voice/036.mp3","よ":"voice/037.mp3","ら":"voice/038.mp3","り":"voice/039.mp3","る":"voice/040.mp3","れ":"voice/041.mp3","ろ":"voice/042.mp3","わ":"voice/043.mp3","を":"voice/044.mp3","ん":"voice/045.mp3","ア":"voice/046.mp3","イ":"voice/047.mp3","ウ":"voice/048.mp3","エ":"voice/049.mp3","オ":"voice/050.mp3","カ":"voice/051.mp3","キ":"voice/052.mp3","ク":"voice/053.mp3","ケ":"voice/054.mp3","コ":"voice/055.mp3","サ":"voice/056.mp3","シ":"voice/057.mp3","ス":"voice/058.mp3","セ":"voice/059.mp3","ソ":"voice/060.mp3","タ":"voice/061.mp3","チ":"voice/062.mp3","ツ":"voice/063.mp3","テ":"voice/064.mp3","ト":"voice/065.mp3","ナ":"voice/066.mp3","ニ":"voice/067.mp3","ヌ":"voice/068.mp3","ネ":"voice/069.mp3","ノ":"voice/070.mp3","ハ":"voice/071.mp3","ヒ":"voice/072.mp3","フ":"voice/073.mp3","ヘ":"voice/074.mp3","ホ":"voice/075.mp3","マ":"voice/076.mp3","ミ":"voice/077.mp3","ム":"voice/078.mp3","メ":"voice/079.mp3","モ":"voice/080.mp3","ヤ":"voice/081.mp3","ユ":"voice/082.mp3","ヨ":"voice/083.mp3","ラ":"voice/084.mp3","リ":"voice/085.mp3","ル":"voice/086.mp3","レ":"voice/087.mp3","ロ":"voice/088.mp3","ワ":"voice/089.mp3","ヲ":"voice/090.mp3","ン":"voice/091.mp3","りんご":"voice/092.mp3","みかん":"voice/093.mp3","バナナ":"voice/094.mp3","ぶどう":"voice/095.mp3","いちご":"voice/096.mp3","もも":"voice/097.mp3","さくらんぼ":"voice/098.mp3","すいか":"voice/099.mp3","メロン":"voice/100.mp3","パイナップル":"voice/101.mp3","レモン":"voice/102.mp3","キウイ":"voice/103.mp3","マンゴー":"voice/104.mp3","なし":"voice/105.mp3","ブルーベリー":"voice/106.mp3","ココナッツ":"voice/107.mp3","にんじん":"voice/108.mp3","トマト":"voice/109.mp3","なす":"voice/110.mp3","とうもろこし":"voice/111.mp3","じゃがいも":"voice/112.mp3","さつまいも":"voice/113.mp3","ピーマン":"voice/114.mp3","きゅうり":"voice/115.mp3","ブロッコリー":"voice/116.mp3","キャベツ":"voice/117.mp3","たまねぎ":"voice/118.mp3","にんにく":"voice/119.mp3","きのこ":"voice/120.mp3","とうがらし":"voice/121.mp3","アボカド":"voice/122.mp3","かぼちゃ":"voice/123.mp3","えだまめ":"voice/124.mp3","ピーナッツ":"voice/125.mp3","だいこん":"voice/126.mp3","ねぎ":"voice/127.mp3","ごぼう":"voice/128.mp3","れんこん":"voice/129.mp3","かき":"voice/130.mp3","いぬ":"voice/131.mp3","ねこ":"voice/132.mp3","ねずみ":"voice/133.mp3","うさぎ":"voice/134.mp3","きつね":"voice/135.mp3","くま":"voice/136.mp3","パンダ":"voice/137.mp3","コアラ":"voice/138.mp3","とら":"voice/139.mp3","ライオン":"voice/140.mp3","うし":"voice/141.mp3","ぶた":"voice/142.mp3","かえる":"voice/143.mp3","さる":"voice/144.mp3","にわとり":"voice/145.mp3","ペンギン":"voice/146.mp3","とり":"voice/147.mp3","ひよこ":"voice/148.mp3","あひる":"voice/149.mp3","わし":"voice/150.mp3","ふくろう":"voice/151.mp3","こうもり":"voice/152.mp3","おおかみ":"voice/153.mp3","いのしし":"voice/154.mp3","うま":"voice/155.mp3","ユニコーン":"voice/156.mp3","かめ":"voice/157.mp3","へび":"voice/158.mp3","とかげ":"voice/159.mp3","きょうりゅう":"voice/160.mp3","たこ":"voice/161.mp3","いか":"voice/162.mp3","えび":"voice/163.mp3","かに":"voice/164.mp3","ふぐ":"voice/165.mp3","さかな":"voice/166.mp3","いるか":"voice/167.mp3","くじら":"voice/168.mp3","さめ":"voice/169.mp3","わに":"voice/170.mp3","ぞう":"voice/171.mp3","かば":"voice/172.mp3","さい":"voice/173.mp3","らくだ":"voice/174.mp3","きりん":"voice/175.mp3","カンガルー":"voice/176.mp3","ひつじ":"voice/177.mp3","やぎ":"voice/178.mp3","しか":"voice/179.mp3","はりねずみ":"voice/180.mp3","りす":"voice/181.mp3","あらいぐま":"voice/182.mp3","ちょうちょ":"voice/183.mp3","むし":"voice/184.mp3","かたつむり":"voice/185.mp3","てんとうむし":"voice/186.mp3","あり":"voice/187.mp3","はち":"voice/188.mp3","ばった":"voice/189.mp3","くも":"voice/190.mp3","かぶとむし":"voice/191.mp3","くわがた":"voice/192.mp3","ごきぶり":"voice/193.mp3","はえ":"voice/194.mp3","さそり":"voice/195.mp3","こおろぎ":"voice/196.mp3","かまきり":"voice/197.mp3","とんぼ":"voice/198.mp3","せみ":"voice/199.mp3","だんごむし":"voice/200.mp3","あおむし":"voice/201.mp3","けむし":"voice/202.mp3","みみず":"voice/203.mp3","すずむし":"voice/204.mp3","みつばち":"voice/205.mp3","でんしゃ":"voice/206.mp3","しんかんせん":"voice/207.mp3","とっきゅう":"voice/208.mp3","きしゃ":"voice/209.mp3","ちかてつ":"voice/210.mp3","ろめんでんしゃ":"voice/211.mp3","バス":"voice/212.mp3","タクシー":"voice/213.mp3","くるま":"voice/214.mp3","トラック":"voice/215.mp3","きゅうきゅうしゃ":"voice/216.mp3","しょうぼうしゃ":"voice/217.mp3","パトカー":"voice/218.mp3","じてんしゃ":"voice/219.mp3","バイク":"voice/220.mp3","ひこうき":"voice/221.mp3","ヘリコプター":"voice/222.mp3","ふね":"voice/223.mp3","ヨット":"voice/224.mp3","ボート":"voice/225.mp3","ロケット":"voice/226.mp3","モノレール":"voice/227.mp3","ロープウェイ":"voice/228.mp3","ケーブルカー":"voice/229.mp3","トラクター":"voice/230.mp3","キックボード":"voice/231.mp3","スクーター":"voice/232.mp3","サッカー":"voice/233.mp3","やきゅう":"voice/234.mp3","バスケ":"voice/235.mp3","テニス":"voice/236.mp3","バレー":"voice/237.mp3","ラグビー":"voice/238.mp3","ゴルフ":"voice/239.mp3","たっきゅう":"voice/240.mp3","バドミントン":"voice/241.mp3","ボウリング":"voice/242.mp3","すいえい":"voice/243.mp3","スケート":"voice/244.mp3","スキー":"voice/245.mp3","スノーボード":"voice/246.mp3","じゅうどう":"voice/247.mp3","ボクシング":"voice/248.mp3","サーフィン":"voice/249.mp3","サイクリング":"voice/250.mp3","ジョギング":"voice/251.mp3","とざん":"voice/252.mp3","じょうば":"voice/253.mp3","アイスホッケー":"voice/254.mp3","ホッケー":"voice/255.mp3","アーチェリー":"voice/256.mp3","つり":"voice/257.mp3","ダイビング":"voice/258.mp3","たいそう":"voice/259.mp3","けいひんとうほくせん":"voice/260.mp3","うつのみやせん":"voice/261.mp3","さいきょうせん":"voice/262.mp3","やまのてせん":"voice/263.mp3","なんぶせん":"voice/264.mp3","よこはません":"voice/265.mp3","じょうばんせん":"voice/266.mp3","けいようせん":"voice/267.mp3","ちゅうおうせん":"voice/268.mp3","そうぶせん":"voice/269.mp3","むさしのせん":"voice/270.mp3","おおさかかんじょうせん":"voice/271.mp3","きょうとせん":"voice/272.mp3","かんさいほんせん":"voice/273.mp3","とうきゅうとうよこせん":"voice/274.mp3","でんえんとしせん":"voice/275.mp3","けいきゅうせん":"voice/276.mp3","けいおうせん":"voice/277.mp3","おだきゅうせん":"voice/278.mp3","せいぶいけぶくろせん":"voice/279.mp3","せいぶしんじゅくせん":"voice/280.mp3","とうぶすかいつりーらいん":"voice/281.mp3","とうぶとうじょうせん":"voice/282.mp3","けいせいせん":"voice/283.mp3","そうてつせん":"voice/284.mp3","つくばえくすぷれす":"voice/285.mp3","みなとみらいせん":"voice/286.mp3","はんきゅう":"voice/287.mp3","はんしん":"voice/288.mp3","けいはん":"voice/289.mp3","きんてつ":"voice/290.mp3","なんかい":"voice/291.mp3","めいてつ":"voice/292.mp3","ぎんざせん":"voice/293.mp3","まるのうちせん":"voice/294.mp3","ひびやせん":"voice/295.mp3","とうざいせん":"voice/296.mp3","ちよだせん":"voice/297.mp3","ゆうらくちょうせん":"voice/298.mp3","はんぞうもんせん":"voice/299.mp3","なんぼくせん":"voice/300.mp3","ふくとしんせん":"voice/301.mp3","あさくさせん":"voice/302.mp3","みたせん":"voice/303.mp3","しんじゅくせん":"voice/304.mp3","おおえどせん":"voice/305.mp3","みどうすじせん":"voice/306.mp3","たにまちせん":"voice/307.mp3","おおさかちゅうおうせん":"voice/308.mp3","よつばしせん":"voice/309.mp3","さかいすじせん":"voice/310.mp3","ひがしやません":"voice/311.mp3","めいじょうせん":"voice/312.mp3","はやぶさ":"voice/313.mp3","こまち":"voice/314.mp3","かがやき":"voice/315.mp3","のぞみ":"voice/316.mp3","どくたーいえろー":"voice/317.mp3","やまびこ":"voice/318.mp3","つばさ":"voice/319.mp3","とき":"voice/320.mp3","ごひゃっけい":"voice/321.mp3","さくら":"voice/322.mp3","つばめ":"voice/323.mp3","かもめ":"voice/324.mp3","なりたえくすぷれす":"voice/325.mp3","ろまんすかー":"voice/326.mp3","あずさ":"voice/327.mp3","ひたち":"voice/328.mp3","さんだーばーど":"voice/329.mp3","くろしお":"voice/330.mp3","さふぃーるおどりこ":"voice/331.mp3","そにっく":"voice/332.mp3","ゆふいんのもり":"voice/333.mp3","しまかぜ":"voice/334.mp3","ひのとり":"voice/335.mp3","らぴーと":"voice/336.mp3","すぺーしあえっくす":"voice/337.mp3","らいらっく":"voice/338.mp3","いなほ":"voice/339.mp3","しらさぎ":"voice/340.mp3","おどりこ":"voice/341.mp3","すーぱーはくと":"voice/342.mp3","ぱのらまかー":"voice/343.mp3","でんしゃ、しゅっぱつ しんこう！":"voice/344.mp3","one":"voice/345.mp3","two":"voice/346.mp3","three":"voice/347.mp3","four":"voice/348.mp3","five":"voice/349.mp3","six":"voice/350.mp3","seven":"voice/351.mp3","eight":"voice/352.mp3","nine":"voice/353.mp3","zero":"voice/354.mp3","A":"voice/355.mp3","B":"voice/356.mp3","C":"voice/357.mp3","D":"voice/358.mp3","E":"voice/359.mp3","F":"voice/360.mp3","G":"voice/361.mp3","H":"voice/362.mp3","I":"voice/363.mp3","J":"voice/364.mp3","K":"voice/365.mp3","L":"voice/366.mp3","M":"voice/367.mp3","N":"voice/368.mp3","O":"voice/369.mp3","P":"voice/370.mp3","Q":"voice/371.mp3","R":"voice/372.mp3","S":"voice/373.mp3","T":"voice/374.mp3","U":"voice/375.mp3","V":"voice/376.mp3","W":"voice/377.mp3","X":"voice/378.mp3","Y":"voice/379.mp3","Z":"voice/380.mp3"},"青山龍星":{"あ":"voice/aoyama/000.mp3","い":"voice/aoyama/001.mp3","う":"voice/aoyama/002.mp3","え":"voice/aoyama/003.mp3","お":"voice/aoyama/004.mp3","か":"voice/aoyama/005.mp3","き":"voice/aoyama/006.mp3","く":"voice/aoyama/007.mp3","け":"voice/aoyama/008.mp3","こ":"voice/aoyama/009.mp3","さ":"voice/aoyama/010.mp3","し":"voice/aoyama/011.mp3","す":"voice/aoyama/012.mp3","せ":"voice/aoyama/013.mp3","そ":"voice/aoyama/014.mp3","た":"voice/aoyama/015.mp3","ち":"voice/aoyama/016.mp3","つ":"voice/aoyama/017.mp3","て":"voice/aoyama/018.mp3","と":"voice/aoyama/019.mp3","な":"voice/aoyama/020.mp3","に":"voice/aoyama/021.mp3","ぬ":"voice/aoyama/022.mp3","ね":"voice/aoyama/023.mp3","の":"voice/aoyama/024.mp3","は":"voice/aoyama/025.mp3","ひ":"voice/aoyama/026.mp3","ふ":"voice/aoyama/027.mp3","へ":"voice/aoyama/028.mp3","ほ":"voice/aoyama/029.mp3","ま":"voice/aoyama/030.mp3","み":"voice/aoyama/031.mp3","む":"voice/aoyama/032.mp3","め":"voice/aoyama/033.mp3","も":"voice/aoyama/034.mp3","や":"voice/aoyama/035.mp3","ゆ":"voice/aoyama/036.mp3","よ":"voice/aoyama/037.mp3","ら":"voice/aoyama/038.mp3","り":"voice/aoyama/039.mp3","る":"voice/aoyama/040.mp3","れ":"voice/aoyama/041.mp3","ろ":"voice/aoyama/042.mp3","わ":"voice/aoyama/043.mp3","を":"voice/aoyama/044.mp3","ん":"voice/aoyama/045.mp3","ア":"voice/aoyama/046.mp3","イ":"voice/aoyama/047.mp3","ウ":"voice/aoyama/048.mp3","エ":"voice/aoyama/049.mp3","オ":"voice/aoyama/050.mp3","カ":"voice/aoyama/051.mp3","キ":"voice/aoyama/052.mp3","ク":"voice/aoyama/053.mp3","ケ":"voice/aoyama/054.mp3","コ":"voice/aoyama/055.mp3","サ":"voice/aoyama/056.mp3","シ":"voice/aoyama/057.mp3","ス":"voice/aoyama/058.mp3","セ":"voice/aoyama/059.mp3","ソ":"voice/aoyama/060.mp3","タ":"voice/aoyama/061.mp3","チ":"voice/aoyama/062.mp3","ツ":"voice/aoyama/063.mp3","テ":"voice/aoyama/064.mp3","ト":"voice/aoyama/065.mp3","ナ":"voice/aoyama/066.mp3","ニ":"voice/aoyama/067.mp3","ヌ":"voice/aoyama/068.mp3","ネ":"voice/aoyama/069.mp3","ノ":"voice/aoyama/070.mp3","ハ":"voice/aoyama/071.mp3","ヒ":"voice/aoyama/072.mp3","フ":"voice/aoyama/073.mp3","ヘ":"voice/aoyama/074.mp3","ホ":"voice/aoyama/075.mp3","マ":"voice/aoyama/076.mp3","ミ":"voice/aoyama/077.mp3","ム":"voice/aoyama/078.mp3","メ":"voice/aoyama/079.mp3","モ":"voice/aoyama/080.mp3","ヤ":"voice/aoyama/081.mp3","ユ":"voice/aoyama/082.mp3","ヨ":"voice/aoyama/083.mp3","ラ":"voice/aoyama/084.mp3","リ":"voice/aoyama/085.mp3","ル":"voice/aoyama/086.mp3","レ":"voice/aoyama/087.mp3","ロ":"voice/aoyama/088.mp3","ワ":"voice/aoyama/089.mp3","ヲ":"voice/aoyama/090.mp3","ン":"voice/aoyama/091.mp3","りんご":"voice/aoyama/092.mp3","みかん":"voice/aoyama/093.mp3","バナナ":"voice/aoyama/094.mp3","ぶどう":"voice/aoyama/095.mp3","いちご":"voice/aoyama/096.mp3","もも":"voice/aoyama/097.mp3","さくらんぼ":"voice/aoyama/098.mp3","すいか":"voice/aoyama/099.mp3","メロン":"voice/aoyama/100.mp3","パイナップル":"voice/aoyama/101.mp3","レモン":"voice/aoyama/102.mp3","キウイ":"voice/aoyama/103.mp3","マンゴー":"voice/aoyama/104.mp3","なし":"voice/aoyama/105.mp3","ブルーベリー":"voice/aoyama/106.mp3","ココナッツ":"voice/aoyama/107.mp3","にんじん":"voice/aoyama/108.mp3","トマト":"voice/aoyama/109.mp3","なす":"voice/aoyama/110.mp3","とうもろこし":"voice/aoyama/111.mp3","じゃがいも":"voice/aoyama/112.mp3","さつまいも":"voice/aoyama/113.mp3","ピーマン":"voice/aoyama/114.mp3","きゅうり":"voice/aoyama/115.mp3","ブロッコリー":"voice/aoyama/116.mp3","キャベツ":"voice/aoyama/117.mp3","たまねぎ":"voice/aoyama/118.mp3","にんにく":"voice/aoyama/119.mp3","きのこ":"voice/aoyama/120.mp3","とうがらし":"voice/aoyama/121.mp3","アボカド":"voice/aoyama/122.mp3","かぼちゃ":"voice/aoyama/123.mp3","えだまめ":"voice/aoyama/124.mp3","ピーナッツ":"voice/aoyama/125.mp3","だいこん":"voice/aoyama/126.mp3","ねぎ":"voice/aoyama/127.mp3","ごぼう":"voice/aoyama/128.mp3","れんこん":"voice/aoyama/129.mp3","かき":"voice/aoyama/130.mp3","いぬ":"voice/aoyama/131.mp3","ねこ":"voice/aoyama/132.mp3","ねずみ":"voice/aoyama/133.mp3","うさぎ":"voice/aoyama/134.mp3","きつね":"voice/aoyama/135.mp3","くま":"voice/aoyama/136.mp3","パンダ":"voice/aoyama/137.mp3","コアラ":"voice/aoyama/138.mp3","とら":"voice/aoyama/139.mp3","ライオン":"voice/aoyama/140.mp3","うし":"voice/aoyama/141.mp3","ぶた":"voice/aoyama/142.mp3","かえる":"voice/aoyama/143.mp3","さる":"voice/aoyama/144.mp3","にわとり":"voice/aoyama/145.mp3","ペンギン":"voice/aoyama/146.mp3","とり":"voice/aoyama/147.mp3","ひよこ":"voice/aoyama/148.mp3","あひる":"voice/aoyama/149.mp3","わし":"voice/aoyama/150.mp3","ふくろう":"voice/aoyama/151.mp3","こうもり":"voice/aoyama/152.mp3","おおかみ":"voice/aoyama/153.mp3","いのしし":"voice/aoyama/154.mp3","うま":"voice/aoyama/155.mp3","ユニコーン":"voice/aoyama/156.mp3","かめ":"voice/aoyama/157.mp3","へび":"voice/aoyama/158.mp3","とかげ":"voice/aoyama/159.mp3","きょうりゅう":"voice/aoyama/160.mp3","たこ":"voice/aoyama/161.mp3","いか":"voice/aoyama/162.mp3","えび":"voice/aoyama/163.mp3","かに":"voice/aoyama/164.mp3","ふぐ":"voice/aoyama/165.mp3","さかな":"voice/aoyama/166.mp3","いるか":"voice/aoyama/167.mp3","くじら":"voice/aoyama/168.mp3","さめ":"voice/aoyama/169.mp3","わに":"voice/aoyama/170.mp3","ぞう":"voice/aoyama/171.mp3","かば":"voice/aoyama/172.mp3","さい":"voice/aoyama/173.mp3","らくだ":"voice/aoyama/174.mp3","きりん":"voice/aoyama/175.mp3","カンガルー":"voice/aoyama/176.mp3","ひつじ":"voice/aoyama/177.mp3","やぎ":"voice/aoyama/178.mp3","しか":"voice/aoyama/179.mp3","はりねずみ":"voice/aoyama/180.mp3","りす":"voice/aoyama/181.mp3","あらいぐま":"voice/aoyama/182.mp3","ちょうちょ":"voice/aoyama/183.mp3","むし":"voice/aoyama/184.mp3","かたつむり":"voice/aoyama/185.mp3","てんとうむし":"voice/aoyama/186.mp3","あり":"voice/aoyama/187.mp3","はち":"voice/aoyama/188.mp3","ばった":"voice/aoyama/189.mp3","くも":"voice/aoyama/190.mp3","かぶとむし":"voice/aoyama/191.mp3","くわがた":"voice/aoyama/192.mp3","ごきぶり":"voice/aoyama/193.mp3","はえ":"voice/aoyama/194.mp3","さそり":"voice/aoyama/195.mp3","こおろぎ":"voice/aoyama/196.mp3","かまきり":"voice/aoyama/197.mp3","とんぼ":"voice/aoyama/198.mp3","せみ":"voice/aoyama/199.mp3","だんごむし":"voice/aoyama/200.mp3","あおむし":"voice/aoyama/201.mp3","けむし":"voice/aoyama/202.mp3","みみず":"voice/aoyama/203.mp3","すずむし":"voice/aoyama/204.mp3","みつばち":"voice/aoyama/205.mp3","でんしゃ":"voice/aoyama/206.mp3","しんかんせん":"voice/aoyama/207.mp3","とっきゅう":"voice/aoyama/208.mp3","きしゃ":"voice/aoyama/209.mp3","ちかてつ":"voice/aoyama/210.mp3","ろめんでんしゃ":"voice/aoyama/211.mp3","バス":"voice/aoyama/212.mp3","タクシー":"voice/aoyama/213.mp3","くるま":"voice/aoyama/214.mp3","トラック":"voice/aoyama/215.mp3","きゅうきゅうしゃ":"voice/aoyama/216.mp3","しょうぼうしゃ":"voice/aoyama/217.mp3","パトカー":"voice/aoyama/218.mp3","じてんしゃ":"voice/aoyama/219.mp3","バイク":"voice/aoyama/220.mp3","ひこうき":"voice/aoyama/221.mp3","ヘリコプター":"voice/aoyama/222.mp3","ふね":"voice/aoyama/223.mp3","ヨット":"voice/aoyama/224.mp3","ボート":"voice/aoyama/225.mp3","ロケット":"voice/aoyama/226.mp3","モノレール":"voice/aoyama/227.mp3","ロープウェイ":"voice/aoyama/228.mp3","ケーブルカー":"voice/aoyama/229.mp3","トラクター":"voice/aoyama/230.mp3","キックボード":"voice/aoyama/231.mp3","スクーター":"voice/aoyama/232.mp3","サッカー":"voice/aoyama/233.mp3","やきゅう":"voice/aoyama/234.mp3","バスケ":"voice/aoyama/235.mp3","テニス":"voice/aoyama/236.mp3","バレー":"voice/aoyama/237.mp3","ラグビー":"voice/aoyama/238.mp3","ゴルフ":"voice/aoyama/239.mp3","たっきゅう":"voice/aoyama/240.mp3","バドミントン":"voice/aoyama/241.mp3","ボウリング":"voice/aoyama/242.mp3","すいえい":"voice/aoyama/243.mp3","スケート":"voice/aoyama/244.mp3","スキー":"voice/aoyama/245.mp3","スノーボード":"voice/aoyama/246.mp3","じゅうどう":"voice/aoyama/247.mp3","ボクシング":"voice/aoyama/248.mp3","サーフィン":"voice/aoyama/249.mp3","サイクリング":"voice/aoyama/250.mp3","ジョギング":"voice/aoyama/251.mp3","とざん":"voice/aoyama/252.mp3","じょうば":"voice/aoyama/253.mp3","アイスホッケー":"voice/aoyama/254.mp3","ホッケー":"voice/aoyama/255.mp3","アーチェリー":"voice/aoyama/256.mp3","つり":"voice/aoyama/257.mp3","ダイビング":"voice/aoyama/258.mp3","たいそう":"voice/aoyama/259.mp3","けいひんとうほくせん":"voice/aoyama/260.mp3","うつのみやせん":"voice/aoyama/261.mp3","さいきょうせん":"voice/aoyama/262.mp3","やまのてせん":"voice/aoyama/263.mp3","なんぶせん":"voice/aoyama/264.mp3","よこはません":"voice/aoyama/265.mp3","じょうばんせん":"voice/aoyama/266.mp3","けいようせん":"voice/aoyama/267.mp3","ちゅうおうせん":"voice/aoyama/268.mp3","そうぶせん":"voice/aoyama/269.mp3","むさしのせん":"voice/aoyama/270.mp3","おおさかかんじょうせん":"voice/aoyama/271.mp3","きょうとせん":"voice/aoyama/272.mp3","かんさいほんせん":"voice/aoyama/273.mp3","とうきゅうとうよこせん":"voice/aoyama/274.mp3","でんえんとしせん":"voice/aoyama/275.mp3","けいきゅうせん":"voice/aoyama/276.mp3","けいおうせん":"voice/aoyama/277.mp3","おだきゅうせん":"voice/aoyama/278.mp3","せいぶいけぶくろせん":"voice/aoyama/279.mp3","せいぶしんじゅくせん":"voice/aoyama/280.mp3","とうぶすかいつりーらいん":"voice/aoyama/281.mp3","とうぶとうじょうせん":"voice/aoyama/282.mp3","けいせいせん":"voice/aoyama/283.mp3","そうてつせん":"voice/aoyama/284.mp3","つくばえくすぷれす":"voice/aoyama/285.mp3","みなとみらいせん":"voice/aoyama/286.mp3","はんきゅう":"voice/aoyama/287.mp3","はんしん":"voice/aoyama/288.mp3","けいはん":"voice/aoyama/289.mp3","きんてつ":"voice/aoyama/290.mp3","なんかい":"voice/aoyama/291.mp3","めいてつ":"voice/aoyama/292.mp3","ぎんざせん":"voice/aoyama/293.mp3","まるのうちせん":"voice/aoyama/294.mp3","ひびやせん":"voice/aoyama/295.mp3","とうざいせん":"voice/aoyama/296.mp3","ちよだせん":"voice/aoyama/297.mp3","ゆうらくちょうせん":"voice/aoyama/298.mp3","はんぞうもんせん":"voice/aoyama/299.mp3","なんぼくせん":"voice/aoyama/300.mp3","ふくとしんせん":"voice/aoyama/301.mp3","あさくさせん":"voice/aoyama/302.mp3","みたせん":"voice/aoyama/303.mp3","しんじゅくせん":"voice/aoyama/304.mp3","おおえどせん":"voice/aoyama/305.mp3","みどうすじせん":"voice/aoyama/306.mp3","たにまちせん":"voice/aoyama/307.mp3","おおさかちゅうおうせん":"voice/aoyama/308.mp3","よつばしせん":"voice/aoyama/309.mp3","さかいすじせん":"voice/aoyama/310.mp3","ひがしやません":"voice/aoyama/311.mp3","めいじょうせん":"voice/aoyama/312.mp3","はやぶさ":"voice/aoyama/313.mp3","こまち":"voice/aoyama/314.mp3","かがやき":"voice/aoyama/315.mp3","のぞみ":"voice/aoyama/316.mp3","どくたーいえろー":"voice/aoyama/317.mp3","やまびこ":"voice/aoyama/318.mp3","つばさ":"voice/aoyama/319.mp3","とき":"voice/aoyama/320.mp3","ごひゃっけい":"voice/aoyama/321.mp3","さくら":"voice/aoyama/322.mp3","つばめ":"voice/aoyama/323.mp3","かもめ":"voice/aoyama/324.mp3","なりたえくすぷれす":"voice/aoyama/325.mp3","ろまんすかー":"voice/aoyama/326.mp3","あずさ":"voice/aoyama/327.mp3","ひたち":"voice/aoyama/328.mp3","さんだーばーど":"voice/aoyama/329.mp3","くろしお":"voice/aoyama/330.mp3","さふぃーるおどりこ":"voice/aoyama/331.mp3","そにっく":"voice/aoyama/332.mp3","ゆふいんのもり":"voice/aoyama/333.mp3","しまかぜ":"voice/aoyama/334.mp3","ひのとり":"voice/aoyama/335.mp3","らぴーと":"voice/aoyama/336.mp3","すぺーしあえっくす":"voice/aoyama/337.mp3","らいらっく":"voice/aoyama/338.mp3","いなほ":"voice/aoyama/339.mp3","しらさぎ":"voice/aoyama/340.mp3","おどりこ":"voice/aoyama/341.mp3","すーぱーはくと":"voice/aoyama/342.mp3","ぱのらまかー":"voice/aoyama/343.mp3","でんしゃ、しゅっぱつ しんこう！":"voice/aoyama/344.mp3","one":"voice/aoyama/345.mp3","two":"voice/aoyama/346.mp3","three":"voice/aoyama/347.mp3","four":"voice/aoyama/348.mp3","five":"voice/aoyama/349.mp3","six":"voice/aoyama/350.mp3","seven":"voice/aoyama/351.mp3","eight":"voice/aoyama/352.mp3","nine":"voice/aoyama/353.mp3","zero":"voice/aoyama/354.mp3","A":"voice/aoyama/355.mp3","B":"voice/aoyama/356.mp3","C":"voice/aoyama/357.mp3","D":"voice/aoyama/358.mp3","E":"voice/aoyama/359.mp3","F":"voice/aoyama/360.mp3","G":"voice/aoyama/361.mp3","H":"voice/aoyama/362.mp3","I":"voice/aoyama/363.mp3","J":"voice/aoyama/364.mp3","K":"voice/aoyama/365.mp3","L":"voice/aoyama/366.mp3","M":"voice/aoyama/367.mp3","N":"voice/aoyama/368.mp3","O":"voice/aoyama/369.mp3","P":"voice/aoyama/370.mp3","Q":"voice/aoyama/371.mp3","R":"voice/aoyama/372.mp3","S":"voice/aoyama/373.mp3","T":"voice/aoyama/374.mp3","U":"voice/aoyama/375.mp3","V":"voice/aoyama/376.mp3","W":"voice/aoyama/377.mp3","X":"voice/aoyama/378.mp3","Y":"voice/aoyama/379.mp3","Z":"voice/aoyama/380.mp3"},"春日部つむぎ":{"あ":"voice/tsumugi/000.mp3","い":"voice/tsumugi/001.mp3","う":"voice/tsumugi/002.mp3","え":"voice/tsumugi/003.mp3","お":"voice/tsumugi/004.mp3","か":"voice/tsumugi/005.mp3","き":"voice/tsumugi/006.mp3","く":"voice/tsumugi/007.mp3","け":"voice/tsumugi/008.mp3","こ":"voice/tsumugi/009.mp3","さ":"voice/tsumugi/010.mp3","し":"voice/tsumugi/011.mp3","す":"voice/tsumugi/012.mp3","せ":"voice/tsumugi/013.mp3","そ":"voice/tsumugi/014.mp3","た":"voice/tsumugi/015.mp3","ち":"voice/tsumugi/016.mp3","つ":"voice/tsumugi/017.mp3","て":"voice/tsumugi/018.mp3","と":"voice/tsumugi/019.mp3","な":"voice/tsumugi/020.mp3","に":"voice/tsumugi/021.mp3","ぬ":"voice/tsumugi/022.mp3","ね":"voice/tsumugi/023.mp3","の":"voice/tsumugi/024.mp3","は":"voice/tsumugi/025.mp3","ひ":"voice/tsumugi/026.mp3","ふ":"voice/tsumugi/027.mp3","へ":"voice/tsumugi/028.mp3","ほ":"voice/tsumugi/029.mp3","ま":"voice/tsumugi/030.mp3","み":"voice/tsumugi/031.mp3","む":"voice/tsumugi/032.mp3","め":"voice/tsumugi/033.mp3","も":"voice/tsumugi/034.mp3","や":"voice/tsumugi/035.mp3","ゆ":"voice/tsumugi/036.mp3","よ":"voice/tsumugi/037.mp3","ら":"voice/tsumugi/038.mp3","り":"voice/tsumugi/039.mp3","る":"voice/tsumugi/040.mp3","れ":"voice/tsumugi/041.mp3","ろ":"voice/tsumugi/042.mp3","わ":"voice/tsumugi/043.mp3","を":"voice/tsumugi/044.mp3","ん":"voice/tsumugi/045.mp3","ア":"voice/tsumugi/046.mp3","イ":"voice/tsumugi/047.mp3","ウ":"voice/tsumugi/048.mp3","エ":"voice/tsumugi/049.mp3","オ":"voice/tsumugi/050.mp3","カ":"voice/tsumugi/051.mp3","キ":"voice/tsumugi/052.mp3","ク":"voice/tsumugi/053.mp3","ケ":"voice/tsumugi/054.mp3","コ":"voice/tsumugi/055.mp3","サ":"voice/tsumugi/056.mp3","シ":"voice/tsumugi/057.mp3","ス":"voice/tsumugi/058.mp3","セ":"voice/tsumugi/059.mp3","ソ":"voice/tsumugi/060.mp3","タ":"voice/tsumugi/061.mp3","チ":"voice/tsumugi/062.mp3","ツ":"voice/tsumugi/063.mp3","テ":"voice/tsumugi/064.mp3","ト":"voice/tsumugi/065.mp3","ナ":"voice/tsumugi/066.mp3","ニ":"voice/tsumugi/067.mp3","ヌ":"voice/tsumugi/068.mp3","ネ":"voice/tsumugi/069.mp3","ノ":"voice/tsumugi/070.mp3","ハ":"voice/tsumugi/071.mp3","ヒ":"voice/tsumugi/072.mp3","フ":"voice/tsumugi/073.mp3","ヘ":"voice/tsumugi/074.mp3","ホ":"voice/tsumugi/075.mp3","マ":"voice/tsumugi/076.mp3","ミ":"voice/tsumugi/077.mp3","ム":"voice/tsumugi/078.mp3","メ":"voice/tsumugi/079.mp3","モ":"voice/tsumugi/080.mp3","ヤ":"voice/tsumugi/081.mp3","ユ":"voice/tsumugi/082.mp3","ヨ":"voice/tsumugi/083.mp3","ラ":"voice/tsumugi/084.mp3","リ":"voice/tsumugi/085.mp3","ル":"voice/tsumugi/086.mp3","レ":"voice/tsumugi/087.mp3","ロ":"voice/tsumugi/088.mp3","ワ":"voice/tsumugi/089.mp3","ヲ":"voice/tsumugi/090.mp3","ン":"voice/tsumugi/091.mp3","りんご":"voice/tsumugi/092.mp3","みかん":"voice/tsumugi/093.mp3","バナナ":"voice/tsumugi/094.mp3","ぶどう":"voice/tsumugi/095.mp3","いちご":"voice/tsumugi/096.mp3","もも":"voice/tsumugi/097.mp3","さくらんぼ":"voice/tsumugi/098.mp3","すいか":"voice/tsumugi/099.mp3","メロン":"voice/tsumugi/100.mp3","パイナップル":"voice/tsumugi/101.mp3","レモン":"voice/tsumugi/102.mp3","キウイ":"voice/tsumugi/103.mp3","マンゴー":"voice/tsumugi/104.mp3","なし":"voice/tsumugi/105.mp3","ブルーベリー":"voice/tsumugi/106.mp3","ココナッツ":"voice/tsumugi/107.mp3","にんじん":"voice/tsumugi/108.mp3","トマト":"voice/tsumugi/109.mp3","なす":"voice/tsumugi/110.mp3","とうもろこし":"voice/tsumugi/111.mp3","じゃがいも":"voice/tsumugi/112.mp3","さつまいも":"voice/tsumugi/113.mp3","ピーマン":"voice/tsumugi/114.mp3","きゅうり":"voice/tsumugi/115.mp3","ブロッコリー":"voice/tsumugi/116.mp3","キャベツ":"voice/tsumugi/117.mp3","たまねぎ":"voice/tsumugi/118.mp3","にんにく":"voice/tsumugi/119.mp3","きのこ":"voice/tsumugi/120.mp3","とうがらし":"voice/tsumugi/121.mp3","アボカド":"voice/tsumugi/122.mp3","かぼちゃ":"voice/tsumugi/123.mp3","えだまめ":"voice/tsumugi/124.mp3","ピーナッツ":"voice/tsumugi/125.mp3","だいこん":"voice/tsumugi/126.mp3","ねぎ":"voice/tsumugi/127.mp3","ごぼう":"voice/tsumugi/128.mp3","れんこん":"voice/tsumugi/129.mp3","かき":"voice/tsumugi/130.mp3","いぬ":"voice/tsumugi/131.mp3","ねこ":"voice/tsumugi/132.mp3","ねずみ":"voice/tsumugi/133.mp3","うさぎ":"voice/tsumugi/134.mp3","きつね":"voice/tsumugi/135.mp3","くま":"voice/tsumugi/136.mp3","パンダ":"voice/tsumugi/137.mp3","コアラ":"voice/tsumugi/138.mp3","とら":"voice/tsumugi/139.mp3","ライオン":"voice/tsumugi/140.mp3","うし":"voice/tsumugi/141.mp3","ぶた":"voice/tsumugi/142.mp3","かえる":"voice/tsumugi/143.mp3","さる":"voice/tsumugi/144.mp3","にわとり":"voice/tsumugi/145.mp3","ペンギン":"voice/tsumugi/146.mp3","とり":"voice/tsumugi/147.mp3","ひよこ":"voice/tsumugi/148.mp3","あひる":"voice/tsumugi/149.mp3","わし":"voice/tsumugi/150.mp3","ふくろう":"voice/tsumugi/151.mp3","こうもり":"voice/tsumugi/152.mp3","おおかみ":"voice/tsumugi/153.mp3","いのしし":"voice/tsumugi/154.mp3","うま":"voice/tsumugi/155.mp3","ユニコーン":"voice/tsumugi/156.mp3","かめ":"voice/tsumugi/157.mp3","へび":"voice/tsumugi/158.mp3","とかげ":"voice/tsumugi/159.mp3","きょうりゅう":"voice/tsumugi/160.mp3","たこ":"voice/tsumugi/161.mp3","いか":"voice/tsumugi/162.mp3","えび":"voice/tsumugi/163.mp3","かに":"voice/tsumugi/164.mp3","ふぐ":"voice/tsumugi/165.mp3","さかな":"voice/tsumugi/166.mp3","いるか":"voice/tsumugi/167.mp3","くじら":"voice/tsumugi/168.mp3","さめ":"voice/tsumugi/169.mp3","わに":"voice/tsumugi/170.mp3","ぞう":"voice/tsumugi/171.mp3","かば":"voice/tsumugi/172.mp3","さい":"voice/tsumugi/173.mp3","らくだ":"voice/tsumugi/174.mp3","きりん":"voice/tsumugi/175.mp3","カンガルー":"voice/tsumugi/176.mp3","ひつじ":"voice/tsumugi/177.mp3","やぎ":"voice/tsumugi/178.mp3","しか":"voice/tsumugi/179.mp3","はりねずみ":"voice/tsumugi/180.mp3","りす":"voice/tsumugi/181.mp3","あらいぐま":"voice/tsumugi/182.mp3","ちょうちょ":"voice/tsumugi/183.mp3","むし":"voice/tsumugi/184.mp3","かたつむり":"voice/tsumugi/185.mp3","てんとうむし":"voice/tsumugi/186.mp3","あり":"voice/tsumugi/187.mp3","はち":"voice/tsumugi/188.mp3","ばった":"voice/tsumugi/189.mp3","くも":"voice/tsumugi/190.mp3","かぶとむし":"voice/tsumugi/191.mp3","くわがた":"voice/tsumugi/192.mp3","ごきぶり":"voice/tsumugi/193.mp3","はえ":"voice/tsumugi/194.mp3","さそり":"voice/tsumugi/195.mp3","こおろぎ":"voice/tsumugi/196.mp3","かまきり":"voice/tsumugi/197.mp3","とんぼ":"voice/tsumugi/198.mp3","せみ":"voice/tsumugi/199.mp3","だんごむし":"voice/tsumugi/200.mp3","あおむし":"voice/tsumugi/201.mp3","けむし":"voice/tsumugi/202.mp3","みみず":"voice/tsumugi/203.mp3","すずむし":"voice/tsumugi/204.mp3","みつばち":"voice/tsumugi/205.mp3","でんしゃ":"voice/tsumugi/206.mp3","しんかんせん":"voice/tsumugi/207.mp3","とっきゅう":"voice/tsumugi/208.mp3","きしゃ":"voice/tsumugi/209.mp3","ちかてつ":"voice/tsumugi/210.mp3","ろめんでんしゃ":"voice/tsumugi/211.mp3","バス":"voice/tsumugi/212.mp3","タクシー":"voice/tsumugi/213.mp3","くるま":"voice/tsumugi/214.mp3","トラック":"voice/tsumugi/215.mp3","きゅうきゅうしゃ":"voice/tsumugi/216.mp3","しょうぼうしゃ":"voice/tsumugi/217.mp3","パトカー":"voice/tsumugi/218.mp3","じてんしゃ":"voice/tsumugi/219.mp3","バイク":"voice/tsumugi/220.mp3","ひこうき":"voice/tsumugi/221.mp3","ヘリコプター":"voice/tsumugi/222.mp3","ふね":"voice/tsumugi/223.mp3","ヨット":"voice/tsumugi/224.mp3","ボート":"voice/tsumugi/225.mp3","ロケット":"voice/tsumugi/226.mp3","モノレール":"voice/tsumugi/227.mp3","ロープウェイ":"voice/tsumugi/228.mp3","ケーブルカー":"voice/tsumugi/229.mp3","トラクター":"voice/tsumugi/230.mp3","キックボード":"voice/tsumugi/231.mp3","スクーター":"voice/tsumugi/232.mp3","サッカー":"voice/tsumugi/233.mp3","やきゅう":"voice/tsumugi/234.mp3","バスケ":"voice/tsumugi/235.mp3","テニス":"voice/tsumugi/236.mp3","バレー":"voice/tsumugi/237.mp3","ラグビー":"voice/tsumugi/238.mp3","ゴルフ":"voice/tsumugi/239.mp3","たっきゅう":"voice/tsumugi/240.mp3","バドミントン":"voice/tsumugi/241.mp3","ボウリング":"voice/tsumugi/242.mp3","すいえい":"voice/tsumugi/243.mp3","スケート":"voice/tsumugi/244.mp3","スキー":"voice/tsumugi/245.mp3","スノーボード":"voice/tsumugi/246.mp3","じゅうどう":"voice/tsumugi/247.mp3","ボクシング":"voice/tsumugi/248.mp3","サーフィン":"voice/tsumugi/249.mp3","サイクリング":"voice/tsumugi/250.mp3","ジョギング":"voice/tsumugi/251.mp3","とざん":"voice/tsumugi/252.mp3","じょうば":"voice/tsumugi/253.mp3","アイスホッケー":"voice/tsumugi/254.mp3","ホッケー":"voice/tsumugi/255.mp3","アーチェリー":"voice/tsumugi/256.mp3","つり":"voice/tsumugi/257.mp3","ダイビング":"voice/tsumugi/258.mp3","たいそう":"voice/tsumugi/259.mp3","けいひんとうほくせん":"voice/tsumugi/260.mp3","うつのみやせん":"voice/tsumugi/261.mp3","さいきょうせん":"voice/tsumugi/262.mp3","やまのてせん":"voice/tsumugi/263.mp3","なんぶせん":"voice/tsumugi/264.mp3","よこはません":"voice/tsumugi/265.mp3","じょうばんせん":"voice/tsumugi/266.mp3","けいようせん":"voice/tsumugi/267.mp3","ちゅうおうせん":"voice/tsumugi/268.mp3","そうぶせん":"voice/tsumugi/269.mp3","むさしのせん":"voice/tsumugi/270.mp3","おおさかかんじょうせん":"voice/tsumugi/271.mp3","きょうとせん":"voice/tsumugi/272.mp3","かんさいほんせん":"voice/tsumugi/273.mp3","とうきゅうとうよこせん":"voice/tsumugi/274.mp3","でんえんとしせん":"voice/tsumugi/275.mp3","けいきゅうせん":"voice/tsumugi/276.mp3","けいおうせん":"voice/tsumugi/277.mp3","おだきゅうせん":"voice/tsumugi/278.mp3","せいぶいけぶくろせん":"voice/tsumugi/279.mp3","せいぶしんじゅくせん":"voice/tsumugi/280.mp3","とうぶすかいつりーらいん":"voice/tsumugi/281.mp3","とうぶとうじょうせん":"voice/tsumugi/282.mp3","けいせいせん":"voice/tsumugi/283.mp3","そうてつせん":"voice/tsumugi/284.mp3","つくばえくすぷれす":"voice/tsumugi/285.mp3","みなとみらいせん":"voice/tsumugi/286.mp3","はんきゅう":"voice/tsumugi/287.mp3","はんしん":"voice/tsumugi/288.mp3","けいはん":"voice/tsumugi/289.mp3","きんてつ":"voice/tsumugi/290.mp3","なんかい":"voice/tsumugi/291.mp3","めいてつ":"voice/tsumugi/292.mp3","ぎんざせん":"voice/tsumugi/293.mp3","まるのうちせん":"voice/tsumugi/294.mp3","ひびやせん":"voice/tsumugi/295.mp3","とうざいせん":"voice/tsumugi/296.mp3","ちよだせん":"voice/tsumugi/297.mp3","ゆうらくちょうせん":"voice/tsumugi/298.mp3","はんぞうもんせん":"voice/tsumugi/299.mp3","なんぼくせん":"voice/tsumugi/300.mp3","ふくとしんせん":"voice/tsumugi/301.mp3","あさくさせん":"voice/tsumugi/302.mp3","みたせん":"voice/tsumugi/303.mp3","しんじゅくせん":"voice/tsumugi/304.mp3","おおえどせん":"voice/tsumugi/305.mp3","みどうすじせん":"voice/tsumugi/306.mp3","たにまちせん":"voice/tsumugi/307.mp3","おおさかちゅうおうせん":"voice/tsumugi/308.mp3","よつばしせん":"voice/tsumugi/309.mp3","さかいすじせん":"voice/tsumugi/310.mp3","ひがしやません":"voice/tsumugi/311.mp3","めいじょうせん":"voice/tsumugi/312.mp3","はやぶさ":"voice/tsumugi/313.mp3","こまち":"voice/tsumugi/314.mp3","かがやき":"voice/tsumugi/315.mp3","のぞみ":"voice/tsumugi/316.mp3","どくたーいえろー":"voice/tsumugi/317.mp3","やまびこ":"voice/tsumugi/318.mp3","つばさ":"voice/tsumugi/319.mp3","とき":"voice/tsumugi/320.mp3","ごひゃっけい":"voice/tsumugi/321.mp3","さくら":"voice/tsumugi/322.mp3","つばめ":"voice/tsumugi/323.mp3","かもめ":"voice/tsumugi/324.mp3","なりたえくすぷれす":"voice/tsumugi/325.mp3","ろまんすかー":"voice/tsumugi/326.mp3","あずさ":"voice/tsumugi/327.mp3","ひたち":"voice/tsumugi/328.mp3","さんだーばーど":"voice/tsumugi/329.mp3","くろしお":"voice/tsumugi/330.mp3","さふぃーるおどりこ":"voice/tsumugi/331.mp3","そにっく":"voice/tsumugi/332.mp3","ゆふいんのもり":"voice/tsumugi/333.mp3","しまかぜ":"voice/tsumugi/334.mp3","ひのとり":"voice/tsumugi/335.mp3","らぴーと":"voice/tsumugi/336.mp3","すぺーしあえっくす":"voice/tsumugi/337.mp3","らいらっく":"voice/tsumugi/338.mp3","いなほ":"voice/tsumugi/339.mp3","しらさぎ":"voice/tsumugi/340.mp3","おどりこ":"voice/tsumugi/341.mp3","すーぱーはくと":"voice/tsumugi/342.mp3","ぱのらまかー":"voice/tsumugi/343.mp3","でんしゃ、しゅっぱつ しんこう！":"voice/tsumugi/344.mp3","one":"voice/tsumugi/345.mp3","two":"voice/tsumugi/346.mp3","three":"voice/tsumugi/347.mp3","four":"voice/tsumugi/348.mp3","five":"voice/tsumugi/349.mp3","six":"voice/tsumugi/350.mp3","seven":"voice/tsumugi/351.mp3","eight":"voice/tsumugi/352.mp3","nine":"voice/tsumugi/353.mp3","zero":"voice/tsumugi/354.mp3","A":"voice/tsumugi/355.mp3","B":"voice/tsumugi/356.mp3","C":"voice/tsumugi/357.mp3","D":"voice/tsumugi/358.mp3","E":"voice/tsumugi/359.mp3","F":"voice/tsumugi/360.mp3","G":"voice/tsumugi/361.mp3","H":"voice/tsumugi/362.mp3","I":"voice/tsumugi/363.mp3","J":"voice/tsumugi/364.mp3","K":"voice/tsumugi/365.mp3","L":"voice/tsumugi/366.mp3","M":"voice/tsumugi/367.mp3","N":"voice/tsumugi/368.mp3","O":"voice/tsumugi/369.mp3","P":"voice/tsumugi/370.mp3","Q":"voice/tsumugi/371.mp3","R":"voice/tsumugi/372.mp3","S":"voice/tsumugi/373.mp3","T":"voice/tsumugi/374.mp3","U":"voice/tsumugi/375.mp3","V":"voice/tsumugi/376.mp3","W":"voice/tsumugi/377.mp3","X":"voice/tsumugi/378.mp3","Y":"voice/tsumugi/379.mp3","Z":"voice/tsumugi/380.mp3"},"四国めたん":{"あ":"voice/metan/000.mp3","い":"voice/metan/001.mp3","う":"voice/metan/002.mp3","え":"voice/metan/003.mp3","お":"voice/metan/004.mp3","か":"voice/metan/005.mp3","き":"voice/metan/006.mp3","く":"voice/metan/007.mp3","け":"voice/metan/008.mp3","こ":"voice/metan/009.mp3","さ":"voice/metan/010.mp3","し":"voice/metan/011.mp3","す":"voice/metan/012.mp3","せ":"voice/metan/013.mp3","そ":"voice/metan/014.mp3","た":"voice/metan/015.mp3","ち":"voice/metan/016.mp3","つ":"voice/metan/017.mp3","て":"voice/metan/018.mp3","と":"voice/metan/019.mp3","な":"voice/metan/020.mp3","に":"voice/metan/021.mp3","ぬ":"voice/metan/022.mp3","ね":"voice/metan/023.mp3","の":"voice/metan/024.mp3","は":"voice/metan/025.mp3","ひ":"voice/metan/026.mp3","ふ":"voice/metan/027.mp3","へ":"voice/metan/028.mp3","ほ":"voice/metan/029.mp3","ま":"voice/metan/030.mp3","み":"voice/metan/031.mp3","む":"voice/metan/032.mp3","め":"voice/metan/033.mp3","も":"voice/metan/034.mp3","や":"voice/metan/035.mp3","ゆ":"voice/metan/036.mp3","よ":"voice/metan/037.mp3","ら":"voice/metan/038.mp3","り":"voice/metan/039.mp3","る":"voice/metan/040.mp3","れ":"voice/metan/041.mp3","ろ":"voice/metan/042.mp3","わ":"voice/metan/043.mp3","を":"voice/metan/044.mp3","ん":"voice/metan/045.mp3","ア":"voice/metan/046.mp3","イ":"voice/metan/047.mp3","ウ":"voice/metan/048.mp3","エ":"voice/metan/049.mp3","オ":"voice/metan/050.mp3","カ":"voice/metan/051.mp3","キ":"voice/metan/052.mp3","ク":"voice/metan/053.mp3","ケ":"voice/metan/054.mp3","コ":"voice/metan/055.mp3","サ":"voice/metan/056.mp3","シ":"voice/metan/057.mp3","ス":"voice/metan/058.mp3","セ":"voice/metan/059.mp3","ソ":"voice/metan/060.mp3","タ":"voice/metan/061.mp3","チ":"voice/metan/062.mp3","ツ":"voice/metan/063.mp3","テ":"voice/metan/064.mp3","ト":"voice/metan/065.mp3","ナ":"voice/metan/066.mp3","ニ":"voice/metan/067.mp3","ヌ":"voice/metan/068.mp3","ネ":"voice/metan/069.mp3","ノ":"voice/metan/070.mp3","ハ":"voice/metan/071.mp3","ヒ":"voice/metan/072.mp3","フ":"voice/metan/073.mp3","ヘ":"voice/metan/074.mp3","ホ":"voice/metan/075.mp3","マ":"voice/metan/076.mp3","ミ":"voice/metan/077.mp3","ム":"voice/metan/078.mp3","メ":"voice/metan/079.mp3","モ":"voice/metan/080.mp3","ヤ":"voice/metan/081.mp3","ユ":"voice/metan/082.mp3","ヨ":"voice/metan/083.mp3","ラ":"voice/metan/084.mp3","リ":"voice/metan/085.mp3","ル":"voice/metan/086.mp3","レ":"voice/metan/087.mp3","ロ":"voice/metan/088.mp3","ワ":"voice/metan/089.mp3","ヲ":"voice/metan/090.mp3","ン":"voice/metan/091.mp3","りんご":"voice/metan/092.mp3","みかん":"voice/metan/093.mp3","バナナ":"voice/metan/094.mp3","ぶどう":"voice/metan/095.mp3","いちご":"voice/metan/096.mp3","もも":"voice/metan/097.mp3","さくらんぼ":"voice/metan/098.mp3","すいか":"voice/metan/099.mp3","メロン":"voice/metan/100.mp3","パイナップル":"voice/metan/101.mp3","レモン":"voice/metan/102.mp3","キウイ":"voice/metan/103.mp3","マンゴー":"voice/metan/104.mp3","なし":"voice/metan/105.mp3","ブルーベリー":"voice/metan/106.mp3","ココナッツ":"voice/metan/107.mp3","にんじん":"voice/metan/108.mp3","トマト":"voice/metan/109.mp3","なす":"voice/metan/110.mp3","とうもろこし":"voice/metan/111.mp3","じゃがいも":"voice/metan/112.mp3","さつまいも":"voice/metan/113.mp3","ピーマン":"voice/metan/114.mp3","きゅうり":"voice/metan/115.mp3","ブロッコリー":"voice/metan/116.mp3","キャベツ":"voice/metan/117.mp3","たまねぎ":"voice/metan/118.mp3","にんにく":"voice/metan/119.mp3","きのこ":"voice/metan/120.mp3","とうがらし":"voice/metan/121.mp3","アボカド":"voice/metan/122.mp3","かぼちゃ":"voice/metan/123.mp3","えだまめ":"voice/metan/124.mp3","ピーナッツ":"voice/metan/125.mp3","だいこん":"voice/metan/126.mp3","ねぎ":"voice/metan/127.mp3","ごぼう":"voice/metan/128.mp3","れんこん":"voice/metan/129.mp3","かき":"voice/metan/130.mp3","いぬ":"voice/metan/131.mp3","ねこ":"voice/metan/132.mp3","ねずみ":"voice/metan/133.mp3","うさぎ":"voice/metan/134.mp3","きつね":"voice/metan/135.mp3","くま":"voice/metan/136.mp3","パンダ":"voice/metan/137.mp3","コアラ":"voice/metan/138.mp3","とら":"voice/metan/139.mp3","ライオン":"voice/metan/140.mp3","うし":"voice/metan/141.mp3","ぶた":"voice/metan/142.mp3","かえる":"voice/metan/143.mp3","さる":"voice/metan/144.mp3","にわとり":"voice/metan/145.mp3","ペンギン":"voice/metan/146.mp3","とり":"voice/metan/147.mp3","ひよこ":"voice/metan/148.mp3","あひる":"voice/metan/149.mp3","わし":"voice/metan/150.mp3","ふくろう":"voice/metan/151.mp3","こうもり":"voice/metan/152.mp3","おおかみ":"voice/metan/153.mp3","いのしし":"voice/metan/154.mp3","うま":"voice/metan/155.mp3","ユニコーン":"voice/metan/156.mp3","かめ":"voice/metan/157.mp3","へび":"voice/metan/158.mp3","とかげ":"voice/metan/159.mp3","きょうりゅう":"voice/metan/160.mp3","たこ":"voice/metan/161.mp3","いか":"voice/metan/162.mp3","えび":"voice/metan/163.mp3","かに":"voice/metan/164.mp3","ふぐ":"voice/metan/165.mp3","さかな":"voice/metan/166.mp3","いるか":"voice/metan/167.mp3","くじら":"voice/metan/168.mp3","さめ":"voice/metan/169.mp3","わに":"voice/metan/170.mp3","ぞう":"voice/metan/171.mp3","かば":"voice/metan/172.mp3","さい":"voice/metan/173.mp3","らくだ":"voice/metan/174.mp3","きりん":"voice/metan/175.mp3","カンガルー":"voice/metan/176.mp3","ひつじ":"voice/metan/177.mp3","やぎ":"voice/metan/178.mp3","しか":"voice/metan/179.mp3","はりねずみ":"voice/metan/180.mp3","りす":"voice/metan/181.mp3","あらいぐま":"voice/metan/182.mp3","ちょうちょ":"voice/metan/183.mp3","むし":"voice/metan/184.mp3","かたつむり":"voice/metan/185.mp3","てんとうむし":"voice/metan/186.mp3","あり":"voice/metan/187.mp3","はち":"voice/metan/188.mp3","ばった":"voice/metan/189.mp3","くも":"voice/metan/190.mp3","かぶとむし":"voice/metan/191.mp3","くわがた":"voice/metan/192.mp3","ごきぶり":"voice/metan/193.mp3","はえ":"voice/metan/194.mp3","さそり":"voice/metan/195.mp3","こおろぎ":"voice/metan/196.mp3","かまきり":"voice/metan/197.mp3","とんぼ":"voice/metan/198.mp3","せみ":"voice/metan/199.mp3","だんごむし":"voice/metan/200.mp3","あおむし":"voice/metan/201.mp3","けむし":"voice/metan/202.mp3","みみず":"voice/metan/203.mp3","すずむし":"voice/metan/204.mp3","みつばち":"voice/metan/205.mp3","でんしゃ":"voice/metan/206.mp3","しんかんせん":"voice/metan/207.mp3","とっきゅう":"voice/metan/208.mp3","きしゃ":"voice/metan/209.mp3","ちかてつ":"voice/metan/210.mp3","ろめんでんしゃ":"voice/metan/211.mp3","バス":"voice/metan/212.mp3","タクシー":"voice/metan/213.mp3","くるま":"voice/metan/214.mp3","トラック":"voice/metan/215.mp3","きゅうきゅうしゃ":"voice/metan/216.mp3","しょうぼうしゃ":"voice/metan/217.mp3","パトカー":"voice/metan/218.mp3","じてんしゃ":"voice/metan/219.mp3","バイク":"voice/metan/220.mp3","ひこうき":"voice/metan/221.mp3","ヘリコプター":"voice/metan/222.mp3","ふね":"voice/metan/223.mp3","ヨット":"voice/metan/224.mp3","ボート":"voice/metan/225.mp3","ロケット":"voice/metan/226.mp3","モノレール":"voice/metan/227.mp3","ロープウェイ":"voice/metan/228.mp3","ケーブルカー":"voice/metan/229.mp3","トラクター":"voice/metan/230.mp3","キックボード":"voice/metan/231.mp3","スクーター":"voice/metan/232.mp3","サッカー":"voice/metan/233.mp3","やきゅう":"voice/metan/234.mp3","バスケ":"voice/metan/235.mp3","テニス":"voice/metan/236.mp3","バレー":"voice/metan/237.mp3","ラグビー":"voice/metan/238.mp3","ゴルフ":"voice/metan/239.mp3","たっきゅう":"voice/metan/240.mp3","バドミントン":"voice/metan/241.mp3","ボウリング":"voice/metan/242.mp3","すいえい":"voice/metan/243.mp3","スケート":"voice/metan/244.mp3","スキー":"voice/metan/245.mp3","スノーボード":"voice/metan/246.mp3","じゅうどう":"voice/metan/247.mp3","ボクシング":"voice/metan/248.mp3","サーフィン":"voice/metan/249.mp3","サイクリング":"voice/metan/250.mp3","ジョギング":"voice/metan/251.mp3","とざん":"voice/metan/252.mp3","じょうば":"voice/metan/253.mp3","アイスホッケー":"voice/metan/254.mp3","ホッケー":"voice/metan/255.mp3","アーチェリー":"voice/metan/256.mp3","つり":"voice/metan/257.mp3","ダイビング":"voice/metan/258.mp3","たいそう":"voice/metan/259.mp3","けいひんとうほくせん":"voice/metan/260.mp3","うつのみやせん":"voice/metan/261.mp3","さいきょうせん":"voice/metan/262.mp3","やまのてせん":"voice/metan/263.mp3","なんぶせん":"voice/metan/264.mp3","よこはません":"voice/metan/265.mp3","じょうばんせん":"voice/metan/266.mp3","けいようせん":"voice/metan/267.mp3","ちゅうおうせん":"voice/metan/268.mp3","そうぶせん":"voice/metan/269.mp3","むさしのせん":"voice/metan/270.mp3","おおさかかんじょうせん":"voice/metan/271.mp3","きょうとせん":"voice/metan/272.mp3","かんさいほんせん":"voice/metan/273.mp3","とうきゅうとうよこせん":"voice/metan/274.mp3","でんえんとしせん":"voice/metan/275.mp3","けいきゅうせん":"voice/metan/276.mp3","けいおうせん":"voice/metan/277.mp3","おだきゅうせん":"voice/metan/278.mp3","せいぶいけぶくろせん":"voice/metan/279.mp3","せいぶしんじゅくせん":"voice/metan/280.mp3","とうぶすかいつりーらいん":"voice/metan/281.mp3","とうぶとうじょうせん":"voice/metan/282.mp3","けいせいせん":"voice/metan/283.mp3","そうてつせん":"voice/metan/284.mp3","つくばえくすぷれす":"voice/metan/285.mp3","みなとみらいせん":"voice/metan/286.mp3","はんきゅう":"voice/metan/287.mp3","はんしん":"voice/metan/288.mp3","けいはん":"voice/metan/289.mp3","きんてつ":"voice/metan/290.mp3","なんかい":"voice/metan/291.mp3","めいてつ":"voice/metan/292.mp3","ぎんざせん":"voice/metan/293.mp3","まるのうちせん":"voice/metan/294.mp3","ひびやせん":"voice/metan/295.mp3","とうざいせん":"voice/metan/296.mp3","ちよだせん":"voice/metan/297.mp3","ゆうらくちょうせん":"voice/metan/298.mp3","はんぞうもんせん":"voice/metan/299.mp3","なんぼくせん":"voice/metan/300.mp3","ふくとしんせん":"voice/metan/301.mp3","あさくさせん":"voice/metan/302.mp3","みたせん":"voice/metan/303.mp3","しんじゅくせん":"voice/metan/304.mp3","おおえどせん":"voice/metan/305.mp3","みどうすじせん":"voice/metan/306.mp3","たにまちせん":"voice/metan/307.mp3","おおさかちゅうおうせん":"voice/metan/308.mp3","よつばしせん":"voice/metan/309.mp3","さかいすじせん":"voice/metan/310.mp3","ひがしやません":"voice/metan/311.mp3","めいじょうせん":"voice/metan/312.mp3","はやぶさ":"voice/metan/313.mp3","こまち":"voice/metan/314.mp3","かがやき":"voice/metan/315.mp3","のぞみ":"voice/metan/316.mp3","どくたーいえろー":"voice/metan/317.mp3","やまびこ":"voice/metan/318.mp3","つばさ":"voice/metan/319.mp3","とき":"voice/metan/320.mp3","ごひゃっけい":"voice/metan/321.mp3","さくら":"voice/metan/322.mp3","つばめ":"voice/metan/323.mp3","かもめ":"voice/metan/324.mp3","なりたえくすぷれす":"voice/metan/325.mp3","ろまんすかー":"voice/metan/326.mp3","あずさ":"voice/metan/327.mp3","ひたち":"voice/metan/328.mp3","さんだーばーど":"voice/metan/329.mp3","くろしお":"voice/metan/330.mp3","さふぃーるおどりこ":"voice/metan/331.mp3","そにっく":"voice/metan/332.mp3","ゆふいんのもり":"voice/metan/333.mp3","しまかぜ":"voice/metan/334.mp3","ひのとり":"voice/metan/335.mp3","らぴーと":"voice/metan/336.mp3","すぺーしあえっくす":"voice/metan/337.mp3","らいらっく":"voice/metan/338.mp3","いなほ":"voice/metan/339.mp3","しらさぎ":"voice/metan/340.mp3","おどりこ":"voice/metan/341.mp3","すーぱーはくと":"voice/metan/342.mp3","ぱのらまかー":"voice/metan/343.mp3","でんしゃ、しゅっぱつ しんこう！":"voice/metan/344.mp3","one":"voice/metan/345.mp3","two":"voice/metan/346.mp3","three":"voice/metan/347.mp3","four":"voice/metan/348.mp3","five":"voice/metan/349.mp3","six":"voice/metan/350.mp3","seven":"voice/metan/351.mp3","eight":"voice/metan/352.mp3","nine":"voice/metan/353.mp3","zero":"voice/metan/354.mp3","A":"voice/metan/355.mp3","B":"voice/metan/356.mp3","C":"voice/metan/357.mp3","D":"voice/metan/358.mp3","E":"voice/metan/359.mp3","F":"voice/metan/360.mp3","G":"voice/metan/361.mp3","H":"voice/metan/362.mp3","I":"voice/metan/363.mp3","J":"voice/metan/364.mp3","K":"voice/metan/365.mp3","L":"voice/metan/366.mp3","M":"voice/metan/367.mp3","N":"voice/metan/368.mp3","O":"voice/metan/369.mp3","P":"voice/metan/370.mp3","Q":"voice/metan/371.mp3","R":"voice/metan/372.mp3","S":"voice/metan/373.mp3","T":"voice/metan/374.mp3","U":"voice/metan/375.mp3","V":"voice/metan/376.mp3","W":"voice/metan/377.mp3","X":"voice/metan/378.mp3","Y":"voice/metan/379.mp3","Z":"voice/metan/380.mp3"}};   /* {読み上げテキスト: 'voice/NNN.mp3'} ：生成後に埋め込む */
+let curAudio=null;
+function playClip(src){ try{ if(curAudio){ curAudio.pause(); curAudio=null; } if('speechSynthesis' in window) speechSynthesis.cancel(); curAudio=new Audio(src); curAudio.play().catch(()=>{}); return true; }catch(e){ return false; } }
+let voices=[],voiceCache={};
+function loadVoices(){ try{voices=speechSynthesis.getVoices();}catch(e){} voiceCache={}; }
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+/* 子供向けに「良い声」を優先（ショボい compact 音声を避ける）。端末にある声で変わる */
+const VOICE_PREF={
+  ja:['kyoko','o-ren','otoya','hattori','siri','google 日本語','拡張','premium','enhanced'],
+  en:['samantha','karen','moira','nicky','aaron','google us english','daniel','enhanced','premium']
+};
+function baseName(n){ return (n||'').split(' (')[0].trim(); }
+function pickVoice(lang){
+  const pref=(lang||'en').slice(0,2);
+  const cands=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith(pref));
+  if(!cands.length) return null;
+  if(state.voice){ const v=cands.find(x=>baseName(x.name).toLowerCase()===state.voice.toLowerCase()); if(v) return v; }
+  for(const n of (VOICE_PREF[pref]||[])){ const v=cands.find(x=>x.name&&x.name.toLowerCase().includes(n)); if(v) return v; }
+  return cands[0];
+}
+function speak(t,lang){
+  { var _vm=(typeof VVS!=='undefined')?VVS[state.voice]:null; if(_vm && _vm[t]){ if(playClip(_vm[t])) return; } }   // VOICEVOX同梱音声（ずんだもん/青山龍星 等）
+  if(!('speechSynthesis' in window))return; try{
+  if(curAudio){ curAudio.pause(); curAudio=null; }
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang=lang||'en-US';
+  u.rate=0.86; u.pitch=1.4;                 // 明るく・はずんだ感じ（子供向け）
+  const v=voiceCache[u.lang]||(voiceCache[u.lang]=pickVoice(u.lang)); if(v)u.voice=v;
+  speechSynthesis.speak(u);
+}catch(e){} }
+let actx=null; function ensureAudio(){ try{ if(!actx)actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended')actx.resume(); }catch(e){} }
+function chime(kind){ ensureAudio(); if(!actx)return; const now=actx.currentTime; const notes=kind==='correct'?[523,659,784,1047]:[392,294]; notes.forEach((f,i)=>{ const o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=f; const t=now+i*0.10; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.30); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+0.32); }); }
+
+const app=document.getElementById('app');
+const $=s=>document.querySelector(s);
+function clouds(){ return '<div class="cloud" style="top:8%">☁️</div><div class="cloud c2" style="top:22%; animation-delay:-14s">☁️</div>'; }
+function confetti(){ const c=['#ff7a59','#ffcf3f','#74d680','#4cc4ff','#b07cff']; for(let i=0;i<34;i++){ const d=document.createElement('div'); d.className='confetti'; d.style.left=Math.random()*100+'vw'; d.style.background=c[i%c.length]; d.style.animation='fall '+(1.4+Math.random()*1.2)+'s ease-in '+(Math.random()*0.4)+'s forwards'; document.body.appendChild(d); setTimeout(()=>d.remove(),3200);} }
+
+/* ---------- passing JR-line trains ---------- */
+const JR_LINES=[
+  // 在来線（JR）
+  {name:'京浜東北線', yomi:'けいひんとうほくせん', stripes:['#00a7db']},
+  {name:'宇都宮線',   yomi:'うつのみやせん',       stripes:['#f7931e','#00984c']},
+  {name:'高崎線',     yomi:'たかさきせん',         stripes:['#f7931e','#00984c']},
+  {name:'湘南新宿ライン', yomi:'しょうなんしんじゅくらいん', stripes:['#f7931e','#00984c']},
+  {name:'上野東京ライン', yomi:'うえのとうきょうらいん',     stripes:['#f7931e','#00984c']},
+  {name:'埼京線',     yomi:'さいきょうせん',       stripes:['#00a040']},
+  {name:'山手線',     yomi:'やまのてせん',         stripes:['#9acd32']},
+  {name:'南武線',     yomi:'なんぶせん',           stripes:['#ffd400','#ef7d00','#8b5a2b']},
+  {name:'横浜線',     yomi:'よこはません',         stripes:['#8fc31f','#006934']},
+  {name:'常磐線',     yomi:'じょうばんせん',       stripes:['#0072bc']},
+  {name:'京葉線',     yomi:'けいようせん',         stripes:['#c30e2e']},
+  {name:'中央線',     yomi:'ちゅうおうせん',       stripes:['#f15a22']},
+  {name:'総武線',     yomi:'そうぶせん',           stripes:['#ffd400']},
+  {name:'武蔵野線',   yomi:'むさしのせん',         stripes:['#ed6d00']},
+  {name:'大阪環状線', yomi:'おおさかかんじょうせん', stripes:['#e83828']},
+  {name:'JR京都線',   yomi:'きょうとせん',         stripes:['#0067c0']},
+  {name:'関西本線',   yomi:'かんさいほんせん',     stripes:['#c30d23']},
+  // 関東の私鉄
+  {name:'東急東横線',         yomi:'とうきゅうとうよこせん',   stripes:['#da0442']},
+  {name:'東急田園都市線',     yomi:'でんえんとしせん',         stripes:['#009933']},
+  {name:'京急本線',           yomi:'けいきゅうせん',           stripes:['#e60012']},
+  {name:'東武東上線',         yomi:'とうぶとうじょうせん',     stripes:['#1c3f94']},
+  {name:'京成本線',           yomi:'けいせいせん',             stripes:['#005aaa']},
+  {name:'相鉄線',             yomi:'そうてつせん',             stripes:['#003670']},
+  {name:'つくばエクスプレス', yomi:'つくばえくすぷれす',       stripes:['#e44d93']},
+  {name:'みなとみらい線',     yomi:'みなとみらいせん',         stripes:['#20398f']},
+  // 関西・名古屋の私鉄
+  {name:'阪急',   yomi:'はんきゅう', stripes:['#7e2d27']},
+  {name:'阪神',   yomi:'はんしん',   stripes:['#f39700']},
+  {name:'京阪',   yomi:'けいはん',   stripes:['#00913a','#7fbf3f']},
+  {name:'近鉄',   yomi:'きんてつ',   stripes:['#e8651e','#003686']},
+  {name:'南海',   yomi:'なんかい',   stripes:['#00913a','#f39700']},
+  {name:'名鉄',   yomi:'めいてつ',   stripes:['#e2231a']},
+  // 地下鉄（東京メトロ・都営）
+  {name:'銀座線',   yomi:'ぎんざせん',     stripes:['#ff9500']},
+  {name:'丸ノ内線', yomi:'まるのうちせん', stripes:['#e60012']},
+  {name:'日比谷線', yomi:'ひびやせん',     stripes:['#9caeb7']},
+  {name:'東西線',   yomi:'とうざいせん',   stripes:['#009bbf']},
+  {name:'千代田線', yomi:'ちよだせん',     stripes:['#00bb85']},
+  {name:'有楽町線', yomi:'ゆうらくちょうせん', stripes:['#c1a470']},
+  {name:'半蔵門線', yomi:'はんぞうもんせん',   stripes:['#8f76d6']},
+  {name:'南北線',   yomi:'なんぼくせん',   stripes:['#00ac9b']},
+  {name:'副都心線', yomi:'ふくとしんせん', stripes:['#9c5e31']},
+  {name:'浅草線',   yomi:'あさくさせん',   stripes:['#e85298']},
+  {name:'三田線',   yomi:'みたせん',       stripes:['#0079c2']},
+  {name:'新宿線',   yomi:'しんじゅくせん', stripes:['#6cbb5a']},
+  {name:'大江戸線', yomi:'おおえどせん',   stripes:['#b6007a']},
+  // 地下鉄（大阪メトロ・名古屋）
+  {name:'御堂筋線', yomi:'みどうすじせん', stripes:['#e5171f']},
+  {name:'谷町線',   yomi:'たにまちせん',   stripes:['#7e2a86']},
+  {name:'中央線（大阪）', yomi:'おおさかちゅうおうせん', stripes:['#009844']},
+  {name:'四つ橋線', yomi:'よつばしせん',   stripes:['#0078ba']},
+  {name:'堺筋線',   yomi:'さかいすじせん', stripes:['#7e3306']},
+  {name:'東山線',   yomi:'ひがしやません', stripes:['#edaa00']},
+  {name:'名城線',   yomi:'めいじょうせん', stripes:['#7b4f96']},
+];
+JR_LINES.forEach(l=>{ if(!l.yomi) l.yomi=l.name; });
+const lineYomi=l=>(l&&l.yomi)||(l&&l.name)||'';
+/* 路線名 -> 画像(任意)。img/ に置いた透過PNGがあれば、ごほうびでその画像を走らせる。無ければSVG/CSSの電車 */
+const TRAINIMG={
+  '京浜東北線':'img/keihintohoku.png',
+  '山手線':'img/yamanote.png',
+  '中央線':'img/chuo.png',
+  '総武線':'img/sobu.png',
+  '京葉線':'img/keiyo.png',
+  '横浜線':'img/yokohama.png',
+  '埼京線':'img/saikyo.png',
+  '常磐線':'img/joban.png',
+  '南武線':'img/nambu.png',
+  '宇都宮線':'img/utsunomiya.png',
+  '高崎線':'img/takasaki.png',
+  '湘南新宿ライン':'img/shonan-shinjuku.png',
+  '上野東京ライン':'img/ueno-tokyo.png'
+};
+function passingTrain(delay, showCaption){
+  delay=delay||0;
+  const line=JR_LINES[Math.floor(Math.random()*JR_LINES.length)];
+  const dir=Math.random()<0.5?'r':'l';
+  const noseSide=dir==='r'?'right':'left';
+  const top=26+Math.random()*48, dur=2.3+Math.random()*0.9;
+  const wins='<span></span>'.repeat(4);
+  const stripes=line.stripes.map(c=>`<i style="background:${c}"></i>`).join('');
+  const car=front=>`<div class="jr-car ${front?'front nose-'+noseSide:''}">`
+    +`<div class="jr-body"><div class="jr-win">${wins}</div><div class="jr-stripe">${stripes}</div>${front?'<em class="jr-shield"></em>':''}</div>`
+    +`<b class="jr-bogie" style="left:14%"></b><b class="jr-bogie" style="right:14%"></b>${front?'<u class="jr-head"></u>':''}</div>`;
+  let parts=[car(true),car(false),car(false)];
+  if(dir==='r') parts.reverse();
+  const el=document.createElement('div');
+  el.className='jr-train'; el.style.top=top+'vh';
+  el.innerHTML=parts.join('<b class="jr-coupler"></b>');
+  el.style.animation=`jr-go-${dir} ${dur}s linear ${delay}s forwards`;
+  document.body.appendChild(el);
+  el.addEventListener('animationend',()=>el.remove());
+  setTimeout(()=>{ if(el.parentNode) el.remove(); }, (delay+dur)*1000+600);
+  if(showCaption){
+    const cap=document.createElement('div'); cap.className='jr-cap';
+    const em=line.kind==='sk'?'🚅':(line.kind==='ltd'?'🚄':'🚃');
+    cap.innerHTML=`<b style="background:${line.stripes[0]}"></b>${em} ${lineYomi(line)}`;
+    document.body.appendChild(cap);
+    setTimeout(()=>cap.classList.add('show'), delay*1000+200);
+    setTimeout(()=>cap.classList.remove('show'), delay*1000+2000);
+    setTimeout(()=>{ if(cap.parentNode) cap.remove(); }, delay*1000+2600);
+  }
+}
+
+/* ---------- title ---------- */
+function renderTitle(){
+  app.innerHTML=`
+  <div class="screen title-screen">
+    ${clouds()}
+    <div class="title-name">采生くんの</div>
+    <h1 class="title">もじ・すうじ<br>なぞり</h1>
+    <div class="title-train">🚂✏️</div>
+    <button class="btn big" id="start">▶ はじめる</button>
+    <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;">
+      <button class="btn ghost" id="progress">🏅 がんばりひょう</button>
+      <button class="btn ghost" id="voice">🎙️ こえを えらぶ</button>
+    </div>
+    <p class="hint">iPadの Apple Pencil で なぞってね（ゆびでもOK）<br>うすい もじを なぞって いろを つけよう</p>
+  </div>`;
+  $('#start').onclick=()=>{ ensureAudio(); speak("Let's go!",'en-US'); renderCats(); };
+  $('#voice').onclick=()=>{ ensureAudio(); renderVoicePicker(); };
+  $('#progress').onclick=()=>renderProgress();
+}
+
+/* ---------- がんばりひょう（進捗＆メダル） ---------- */
+function renderProgress(){
+  if(!state.badges) state.badges={};
+  const rows=CATS.map(c=>{
+    const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
+    const pct=total?Math.round(done/total*100):0;
+    const earned=!!state.badges[c.key];
+    const face=(c.ex||'').split(' ')[0];
+    return `<div class="prow">
+      <div class="pmedal ${earned?'earned':''}" style="border-color:${c.color}">${earned?'🏅':`<span style="color:${c.color}">${face}</span>`}</div>
+      <div class="pmain">
+        <div class="plabel">${c.label} <small>${done}/${total}</small></div>
+        <div class="ptrack"><div class="pfill" style="width:${pct}%; background:${c.color}"></div><span class="ploco" style="left:${pct}%">🚃</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  const totalDone=CATS.reduce((s,c)=>s+c.chars.filter(ch=>state.done[dk(c.key,ch)]).length,0);
+  const badgeCount=CATS.filter(c=>state.badges[c.key]).length;
+  const grand=!!state.badges['__all__'];
+  app.innerHTML=`
+  <div class="screen">
+    <div class="gridhead"><button class="back" id="back">‹ もどる</button><div class="count">がんばりひょう 🏅</div></div>
+    <div class="ctrain">${collectionTrainHtml(false)}</div>
+    <div class="scroll">
+      <div class="psum">おぼえた もじ <b>${totalDone}</b>　メダル <b>${badgeCount}/${CATS.length}</b>${grand?'　🏆':''}</div>
+      ${rows}
+      <p class="hint" style="margin-top:10px;">がんばりは じどうで ほぞんされるよ 💾</p>
+    </div>
+  </div>`;
+  $('#back').onclick=renderTitle;
+}
+
+/* ---------- voice picker（読み上げの声をえらぶ） ---------- */
+const VOICE_EMO={Kyoko:'🙂','O-ren':'🙂',Otoya:'🙂',Hattori:'🙂',Rocko:'🤖',Sandy:'🐿️',Shelley:'🐚',Flo:'🌸',Grandma:'👵',Grandpa:'👴',Reed:'🎷',Eddy:'⚡',Bubbles:'🫧',Boing:'🤾',Jester:'🤡',Trinoids:'👾',Whisper:'🤫',Bells:'🔔'};
+function voiceOptions(){
+  const ja=voices.filter(v=>v.lang&&v.lang.toLowerCase().startsWith('ja'));
+  const seen={}, list=[];
+  ja.forEach(v=>{ const b=baseName(v.name); if(b&&!seen[b]){ seen[b]=1; list.push(b); } });
+  const order=['Kyoko','O-ren','Otoya','Hattori','Rocko','Sandy','Shelley','Flo','Grandma','Grandpa','Reed','Eddy'];
+  list.sort((a,b)=>{ const ia=order.indexOf(a), ib=order.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  return list;
+}
+function renderVoicePicker(){
+  const opts=voiceOptions();
+  const rows=opts.map(b=>{
+    const emo=VOICE_EMO[b]||'🎙️';
+    const sel=(state.voice||'')===b;
+    return `<button class="vrow ${sel?'sel':''}" data-v="${b}"><span class="ve">${emo}</span><span>${b}</span>${sel?'<span class="tag">✓ えらんでる</span>':'<span class="tag">きいてみる ▶</span>'}</button>`;
+  }).join('');
+  const autoSel=!state.voice;
+  const vvKeys=Object.keys(VVS||{});
+  const vvRows=vvKeys.map(label=>{
+    const emo=VV_EMO[label]||'🫛';
+    const sel=state.voice===label;
+    return `<button class="vrow zunda ${sel?'sel':''}" data-v="${label}"><span class="ve">${emo}</span><span>${label}</span>${sel?'<span class="tag">✓ えらんでる</span>':'<span class="tag">きいてみる ▶</span>'}</button>`;
+  }).join('');
+  app.innerHTML=`
+  <div class="screen">
+    <div class="gridhead">
+      <button class="back" id="back">‹ もどる</button>
+      <div class="count">こえを えらぶ 🎙️</div>
+    </div>
+    <div class="voicelist">
+      ${vvRows}
+      <button class="vrow ${autoSel?'sel':''}" data-v=""><span class="ve">✨</span><span>おまかせ</span>${autoSel?'<span class="tag">✓ えらんでる</span>':'<span class="tag">きいてみる ▶</span>'}</button>
+      ${rows}
+      <p class="hint" style="margin-top:6px;">タップ すると こえが きこえるよ。<br>すきな こえを えらんでね。</p>
+      ${vvKeys.length?('<p class="hint" style="margin-top:0; font-size:12px; opacity:.7;">こえ提供：VOICEVOX（'+vvKeys.join('／')+'）</p>'):''}
+      <p class="hint" style="margin-top:2px; font-size:13px; opacity:.85;">（おうちのかたへ）こえを ふやすには：<br>iPhone/iPadの「設定 → アクセシビリティ → 読み上げコンテンツ → 声 → 日本語」から<br>Rocko・Sandy・Otoya などを ダウンロード → このページを 再よみこみ</p>
+    </div>
+  </div>`;
+  $('#back').onclick=renderTitle;
+  app.querySelectorAll('.vrow').forEach(el=>el.onclick=()=>{
+    state.voice=el.dataset.v||''; voiceCache={}; saveState();
+    speak('でんしゃ、しゅっぱつ しんこう！','ja-JP');
+    renderVoicePicker();
+  });
+}
+
+/* ---------- category select ---------- */
+function renderCats(){
+  const btns=CATS.map(c=>{
+    const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
+    return `<button class="catbtn" data-k="${c.key}" style="background:${c.color}">
+      <span>${c.label} <small>(${done}/${total})</small></span>
+      <span class="ex">${c.ex}</span>
+    </button>`;
+  }).join('');
+  app.innerHTML=`
+  <div class="screen">
+    ${clouds()}
+    <div class="gridhead">
+      <button class="back" id="home">‹ さいしょへ</button>
+      <button class="back" id="voice2">🎙️ こえ</button>
+    </div>
+    <div class="topbar" style="padding-top:2px;"><h2>なにを なぞる？ ✏️</h2></div>
+    <div class="cats">${btns}</div>
+  </div>`;
+  $('#home').onclick=renderTitle;
+  $('#voice2').onclick=()=>{ ensureAudio(); renderVoicePicker(); };
+  app.querySelectorAll('.catbtn').forEach(b=>b.onclick=()=>renderGrid(b.dataset.k));
+}
+
+/* ---------- char grid ---------- */
+function renderGrid(key){
+  const cat=catOf(key);
+  const doneChars=cat.chars.filter(ch=>state.done[dk(key,ch)]);
+  const cells=cat.chars.map(ch=>{
+    const d=state.done[dk(key,ch)];
+    if(cat.word){
+      const pic=picOf(cat,ch);
+      return `<div class="cc word ${d?'done':''}" data-c="${ch}">${pic?`<span class="cc-emo">${pic}</span>`:''}<span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
+    }
+    return `<div class="cc ${d?'done':''}" data-c="${ch}">${ch}${d?'<span class="ck">⭐️</span>':''}</div>`;
+  }).join('');
+  app.innerHTML=`
+  <div class="screen">
+    <div class="gridhead">
+      <button class="back" id="back">‹ もどる</button>
+      <div class="count">${doneChars.length} / ${cat.chars.length}</div>
+    </div>
+    <div class="ctrain">${collectionTrainHtml(false)}</div>
+    <div class="scroll"><div class="cgrid${cat.word?' wordgrid':''}">${cells}</div></div>
+  </div>`;
+  $('#back').onclick=renderCats;
+  app.querySelectorAll('.cc').forEach(el=>el.onclick=()=>renderTrace(key, el.dataset.c));
+}
+
+
+/* ひらがな書き順データは KanjiVG (Ulrich Apel ほか, CC BY-SA 3.0, http://kanjivg.tagaini.net) 由来 */
+const HKVG={
+"あ":["M31.01,33c0.88,0.88,2.75,1.82,5.25,1.75c8.62-0.25,20-2.12,29.5-4.25c1.51-0.34,4.62-0.88,6.62-0.5","M49.76,17.62c0.88,1,1.82,3.26,1.38,5.25c-3.75,16.75-6.25,38.13-5.13,53.63c0.41,5.7,1.88,10.88,3.38,13.62","M65.63,44.12c0.75,1.12,1.16,4.39,0.5,6.12c-4.62,12.26-11.24,23.76-25.37,35.76c-6.86,5.83-15.88,3.75-16.25-8.38c-0.34-10.87,13.38-23.12,32.38-26.74c12.42-2.37,27,1.38,30.5,12.75c4.05,13.18-3.76,26.37-20.88,30.49"],
+"い":["M21.5,29.66c2.01,2.17,2.61,4.68,2.17,7.43c-3.09,19.16-1.03,32.01,7.93,41.45c6.12,6.45,6.26,3.14,7.04-5.21","M72.96,36.51c9.44,8.05,17.79,18.82,18.41,33.83"],
+"う":["M42,15.5c5.62,2.12,9.62,3,12.88,3c8.27,0,8,1.12-0.38,5.5","M33,42.38c2.12,1.12,4.12,2.88,8.5,1.38c4.38-1.5,12.75-7.12,18.5-7c5.75,0.12,10.25,5,10.25,18c0,15.49-8.25,30.24-24.37,41.24"],
+"え":["M40.52,13.25c5.62,2.12,10,3,14.12,3c8.27,0,8,1.12-0.38,5.5","M32.52,45.12c1.88,1.25,4.5,1.75,7.38,0.62c3.29-1.29,17-7.88,21.25-9.88c4.25-2,8.32,0.04,4.38,4.62c-12.26,14.27-27.26,31.52-39.51,44.4c-3.26,3.42-0.58,3.54,1.5,1.37c13.5-14.12,18.12-20.12,23.62-20.12c7.13,0,3.5,16.75,6.75,22.38c3.25,5.63,19.12,3.75,26.12,2.12"],
+"お":["M22.88,35.12c1.38,1,3.62,2.38,6,2.12c2.38-0.26,19.62-5.12,21.12-5.74c1.5-0.62,4-1.25,5.88-2","M41.5,16.12c2.25,1,3.59,4.39,3.12,7.38c-2.5,16.12-3.37,45.53-2.25,58.38c0.75,8.62-0.64,10.45-7.12,7.12c-5.13-2.62-13.75-8-13.75-12.38c0-7.5,24.38-23.62,44.75-23.62c17.25,0,25,8.25,25,17.25c0,8.25-9.38,18.88-26.75,21","M73,22.12c5.38,2.62,8.88,5.88,10.62,8.25c2.27,3.08,0.38,4.5-1.12,5"],
+"か":["M24.62,38.62c1.88,1.62,4.65,2.33,8.62,1c25.5-8.5,29.5-4.13,29.5,7.62c0,9.38-1.24,17.46-4.25,25.25c-7.62,19.76-10.87,17.39-16.12,10.89","M48.5,17.5c1,1.38,1.29,4.7,0.5,7.12c-5,15.25-18.02,40.93-19.62,43.88c-3.12,5.75-6.38,11.88-9.38,16.25","M77.37,31.62c7.5,6.88,13.25,15.75,15,24.88"],
+"き":["M30.5,30.25c1.88,0.75,4.64,1.06,5.88,0.88c6.75-1,22.25-4.5,26.5-6c2.17-0.76,3.5-1.25,4.88-2.12","M36.25,48.7c2.01,0.85,4.97,1.2,6.29,0.99c7.23-1.13,23.82-5.09,28.37-6.79c2.32-0.86,3.75-1.41,5.22-2.4","M42,14.12c1.5,0.88,3.13,2.94,4,5.12c5.5,13.76,16,29.26,26.37,40.76c7.64,8.47,9.12,9.38-6,3.88","M33.75,83.25c10.62,9.75,27.25,8.62,38.12,5"],
+"く":["M60.66,15c0.5,1.62,0.35,5.44-1,7.38c-6.75,9.62-14.3,19.08-18.62,24.5c-4,5-3.79,7.03-0.88,11c5.5,7.5,12.75,18.75,17.62,27.25c1.48,2.59,2.75,4.75,4.5,8.62"],
+"け":["M24.67,19.75c1.25,1.5,2.62,3.75,2.12,6.38c-3,15.88-6.5,29.5-4.88,44.62c2.02,18.84,2.25,4.75,6.75-3.5","M53.67,38.62c2.12,1.38,4.28,1.89,6.88,1.5c8.25-1.25,15.39-2.57,20.62-4c2.76-0.74,5.26-1.12,6.88-1.12","M71.67,14.38c2.13,1.37,2.88,3.35,2.88,5.12c0,11.62,0.12,20.38,0.12,30.12c0,20.75-0.62,30.88-12.5,42.25"],
+"こ":["M34.75,26.75c1.12,0.88,2.91,2.01,6,1.5c7.62-1.25,14.11-2.56,22.38-2.62c15.5-0.12,5.88,5-5.75,9","M30,68.12c2.25,14.5,15.26,17.96,31,16.75c6.5-0.5,11.88-1.25,17.62-2.88"],
+"さ":["M27,38.9c2.42,1.33,5.38,1.47,8.32,1.06c8.79-1.24,28.67-7.76,34.15-10.43c2.79-1.36,3.78-1.91,6.28-3.53","M41.5,13.88c1.5,0.88,3.63,2.94,4.5,5.12c5.5,13.75,15.25,27.62,26.87,39.5c7.98,8.15,6.38,10-6,3.12","M35.25,80.5c4.5,11.75,20.88,12.5,38.38,7.5"],
+"し":["M39.12,17.5c1.25,3.12,0.93,6.74,0.38,10.25c-2.12,13.5-3,26.5-3,39.12c0,27.38,19.88,30.12,45.5,17.25"],
+"す":["M15.5,37.12c2.88,2.12,6.94,1.51,12.75,0.25c16.12-3.5,36.14-5.38,46.62-6.5c7-0.75,11.88-0.62,17.75,0.12","M57.62,13.38c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,35.12,0,40.75c0,14.62-15.62,16.38-15.62,1.75c0-14.25,18-14.12,18,6.38c0,13.25-7.75,21.5-16,28.38"],
+"せ":["M16.5,49.93c2.88,2.42,6.86,1.57,12.75,0.53c19-3.34,33-5.72,47.12-7.64c6.99-0.95,11.88-1.21,17.75-0.36","M69.74,17.75c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,17.88,0,23.5c0,25.62-5.75,23.25-11.88,19","M35.62,26.25c2,1.5,2.75,3.25,2.75,5.88c0,10.38,0,28.38,0,34c0,14.5,6.38,19.55,20.14,19.55c10.24,0,13.74,0.07,22.61-1.68"],
+"そ":["M38.4,22c1.88,1.25,4.98,1.05,7.5,0.38c6.5-1.75,13.25-3.75,19.38-5.38c4.63-1.23,7.18,2.06,3.62,5.25c-12.12,10.87-31.14,24.4-40,30.25c-6.25,4.12-5.88,5.75,1.38,3.88c17.08-4.42,35.96-8.68,50.12-10.38c9.38-1.12,9.62,0.12,0.5,1.38c-15.82,2.17-34.38,14.25-34.38,26.5c0,12.88,11.62,20.38,31.5,16.62"],
+"た":["M24.38,35.38c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,16.25-2.88,24.88-4.75c2.64-0.57,5.38-1.5,7.62-2.38","M45,16.88c0.75,1.25,0.87,3.62,0.38,5.25c-6.35,20.94-12.75,36.37-18.88,52.37c-1.36,3.56-4.75,11.75-6,14.62","M56.38,53.25c12.38-2.75,18.25-3.7,23.62-3.12c15.12,1.62-1.12,2.25-4.25,4.88","M54.13,82.25c4.38,7,14.25,8.12,34.5,5.62"],
+"ち":["M24.5,32.62c1.38,0.62,3.88,1.51,6.38,1.12c6.5-1,18.25-4.12,26.88-6c2.64-0.57,5.38-1.5,7.62-2.38","M45.62,15.62c0.75,1.25,0.71,3.58,0.38,5.25c-3,15-4.25,22.59-8.38,38.62c-3.25,12.62-5.38,11.12,3.62,4.38c8.29-6.21,19.75-9.5,28.5-9.5c8.62,0,14.58,5.88,14.5,14.5c-0.12,13.5-16.5,20.62-29.88,23.25"],
+"つ":["M14,44.75c1.88,1.62,4.68,2.09,8.12,0.62c17.88-7.62,30-11.12,44.88-10.88c12.56,0.21,22.98,7.17,22.87,19.17c-0.18,18.77-24.75,28.71-45.01,32.08"],
+"て":["M20.5,26.38c1.87,1.62,4.42,1.97,8.12,1.37c21.75-3.5,33-5.12,50.12-8.38c12.34-2.34,13-0.88,0.38,1.38c-17.89,3.19-33.78,19.12-33.78,37.62c0,20.5,17.91,30.25,35.16,30.25"],
+"と":["M35.5,18.38c1.74,0.74,3.62,2.62,4.12,5.37c0.5,2.75,4.75,25,5.38,28.12","M78.12,25.5c0.25,1.88,0.04,4.09-2.25,5.75c-6.37,4.63-13.22,8.49-22.75,15.25c-12.88,9.12-21.62,18.38-21.62,27.5c0,10.12,8.5,13.88,26.88,13.88c6.25,0,14.75-0.12,21.62-1.25"],
+"な":["M22.88,28.96c1.18,0.58,3.3,1.1,5.47,1.05c5.53-0.13,10.9-0.98,16.52-2.42c4.82-1.23,9.13-3.12,11.38-4.22","M42.99,14c0.63,0.89,0.56,2.52,0.31,3.72c-2.96,14.16-7.95,26.56-14.25,37.87c-2.05,3.69-4.25,7.24-6.55,10.65","M72.26,23.25c6.88,2.5,12.62,5.62,14.75,9.5c4.06,7.41-0.25,3.38-3.5,3.88","M68.88,44.62c-1,1.88-2.14,5.24-1.88,8.25c0.62,7,1.5,13.12,1.5,20.62c0,20-27.88,19.75-27.88,9.38c0-5.62,8.25-8.25,13.88-8.25c8.75,0,21.5,3.25,29.75,11.5"],
+"に":["M24.53,22.75c1.25,1.5,1.62,3.75,1.12,6.38c-3,15.88-9,32.5-7.38,47.62c2.02,18.84,4.5,5.75,8.5-3.5","M53.2,30.64c0.96,0.79,2.44,1.58,5.1,1.35c6.98-0.61,15.01-3.3,22.04-3.36c13.19-0.11,1.5,3.75-8.39,7.35","M52.53,68c1.76,12.92,11.92,16.01,24.23,14.93c5.08-0.45,8.9-0.8,14.27-2.06"],
+"ぬ":["M25.38,28.5c2,1.38,2.97,3.23,3.38,5.88c1.87,12.18,4.12,23.92,8.54,34.67c1.79,4.36,3.96,8.33,6.84,12.46","M57.12,19.25c0.88,2.12,1.06,3.79,0.62,5.88c-3.12,15-13.14,39.81-18.12,48.62c-11.87,21-20.62,1.25-20.62-4.5c0-22.63,43.75-44.25,62.36-29.59c7.66,6.03,9.8,14.58,9.14,23.34c-2,26.75-32.88,28.38-32.88,16.88c0-9.38,17.38-7.12,27.12-1.12c3.1,1.91,7.25,5.25,9.5,7.5"],
+"ね":["M33.29,14.5c1.62,1.62,2.1,3.21,1.88,5.88c-1.03,11.93-2.06,31.66-2.53,53.12c-0.1,4.62-0.18,9.31-0.22,14","M17.16,37.88c1.62,0.88,3.25,1.38,5.62,0.75c2.14-0.56,7.8-2.31,12.37-4.03c6.26-2.35,6.88-1.47,3.12,3.63c-5.56,7.53-13.02,17.38-18.48,26.77c-5.6,9.62-3.45,8.3,2,3c19.12-18.62,38.5-39.12,54.12-39.12c11.38,0,12.88,11.25,12.88,32.5c0,28.62-30.18,24.88-30.18,16.26c0-9.63,18.73-7.82,28.06-1.88c2.75,1.75,5.88,4.88,7.5,6.75"],
+"の":["M53.82,28.62c1,1.5,1.34,4.12,0.88,6.62c-1.75,9.5-6.89,25-10.75,33.12c-9.63,20.26-16.55,14.74-24.38-1.98c-9.13-19.5,23.5-48.88,50.63-40.38c32.38,10.15,28,54.62-4.75,60.88"],
+"は":["M24.51,18c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.62-6.98,36.4-4,54.88c2.5,15.5,1.12,2,5.62-6.25","M49.64,37.89c2.41,1.57,4.85,2.16,7.8,1.71c9.36-1.43,17.46-2.94,23.4-4.57c3.12-0.86,5.96-1.29,7.8-1.29","M69.77,16.5c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,1.5,38.62,1.5,48c0,22.5-30.62,19.62-30.62,10.5c0-9.75,23.88-5.62,29.5-2.88c5.62,2.74,11.98,8.26,13.36,9.38"],
+"ひ":["M20,25.12c1.25,0.88,3.75,2.25,6.5,1.38c2.75-0.87,7.31-2.38,11.38-4.5c6-3.12,8.42-1.01,4.25,4c-27.13,32.62-23.76,58.5-1.52,62.88c18.07,3.56,37.63-16.38,35.63-56.51c-0.72-14.5-0.17-14.78,4.12-1.75c3.76,11.38,10.26,20.76,16.14,26.5"],
+"ふ":["M42.63,15.62c3.62,3.38,7.5,5.38,12.74,6.13c9.59,1.37,3.5,3.38-1.88,6.12","M43.63,46.88c1.88,4.62,7.5,9.41,14.25,17.5c10.62,12.74,0.49,30-19.13,21.62","M16.5,73.38c0.75,4,1.88,8.12,5,10.12c1.16,0.74,0.12-3.38,13.25-9.12","M80.13,61.88c5.12,3.38,10.28,7.49,11.38,8.88c6.75,8.5-0.25,4.62-4.62,7.12"],
+"へ":["M15,48.75c2.25,1.62,4.67,1.96,7-0.38c3.62-3.62,7.46-6.54,11.25-10.5c5.5-5.75,8.48-4.75,13.12-0.88c12.12,10.12,30.38,25.12,33.38,27.38c3,2.26,12.37,10.38,13.87,11.63"],
+"ほ":["M24.51,18.75c1.25,1.5,2.15,4,1.62,6.62c-3.5,17.63-6.98,37.4-4,55.88c2.5,15.5,1.12,2,5.62-6.25","M53.08,21.13c1.9,1.28,3.82,1.76,6.14,1.4c7.36-1.17,13.73-2.4,18.41-3.73c2.46-0.7,4.69-1.05,6.13-1.05","M53.83,44.3c2.21,1.44,4.46,1.98,7.16,1.57c8.59-1.31,15.78-2.44,21.23-3.94c2.87-0.79,5.72-1.18,7.41-1.18","M72.51,23c1.38,1.62,1.62,4.12,1.62,6.5c0,2.38,2,35.12,2,44.5c0,17.5-29.88,17.12-29.88,8c0-9.75,21.38-7.88,29.5-2.88c5.33,3.28,12,8.25,13.38,9.38"],
+"ま":["M29.83,32.28c2.2,1.15,4.43,1.5,7.14,1.26c11.54-1.04,25.94-3.12,34.66-4.85c2.87-0.57,5.45-0.44,7.13-0.44","M33.83,51.84c2.45,1.61,4.94,1.72,7.94,1.26c9.52-1.46,17.87-3.1,27.03-5.16c3.22-0.72,6.34-1.32,8.21-1.32","M55.81,14c1.52,1.8,1.8,4.57,1.8,7.19c0,2.63,0.46,43.88,0.46,54.25c0,21.3-30.07,19.96-30.07,9.86c0-10.79,25.88-9.93,38.57-3.18c6.12,3.25,11.55,6.38,14.8,9.13"],
+"み":["M32.5,26c1.88,1.75,4.06,1.7,6.88,1.25c3.88-0.62,7.62-1.75,11.88-3.12c4.26-1.37,6.25-0.12,4.5,5.12c-1.75,5.24-6.66,17.39-12,30.12c-13.63,32.51-29.26,29.26-29.26,18.63c0-14.25,20.48-15.36,33-13.5c18.5,2.75,30,6.62,44.38,14.25","M79.38,54.75c0.75,2.38,0.49,4.37,0,6.25c-2.12,8.12-7.5,25-22.12,33.75"],
+"む":["M19.59,31.65c2.1,1.55,4.24,1.66,6.81,1.21c8.17-1.41,15.33-2.98,23.19-4.96c2.76-0.69,5.44-1.27,7.05-1.27","M37.02,15.5c1.62,1.25,2.31,2.88,2.12,5.25c-0.88,11.12-1.5,20.75-4,34.88c-3.61,20.44-19.25,16.99-18.62,7.37c0.5-7.74,6.25-12.86,12.62-13.5c5-0.5,14.28,1.93,5.88,15c-12.62,19.62-11.42,24.51,5.11,25.54c10.98,0.68,19.26,0.72,28.49-0.92c14.15-2.5,7.4-2.63,7.4-11.13","M78.52,36.25c6.88,3.12,11.71,5.95,14.88,10.12c6.25,8.25-1.38,3.62-4.5,4.5"],
+"め":["M27.48,31.75c1.75,1,2.41,3.09,2.5,5.25c0.5,11.62,2.75,23.5,7.25,31.38c1.39,2.44,5.38,8.5,7.25,10.38","M59.6,19.38c1,1.5,1.35,4.12,0.88,6.62c-2.75,14.62-13.62,37.75-20.1,47.24c-12.28,17.14-16.78,13.14-22.28,0.64c-5.38-15.38,26.4-42.18,53.42-35.28c29.08,8.27,23.96,46.02-7.98,50.15"],
+"も":["M49.17,14.75c1.88,1.88,1.86,4.52,1.12,8c-3,14.25-5,26.62-7,42.12c-2.55,19.73-0.75,29.88,17,29.86c20.25-0.02,28.63-13.11,20.01-35.73","M26.54,34.62c1.12,0.88,2.87,2.21,6,2c11.12-0.75,20-2.12,27.74-3.46c3.88-0.67,5.88-1.17,8.88-1.04","M26.42,53.38c-1.5,4,1,6.75,7.75,6.75c8.75,0,17.62-1,22.88-1.88c2.01-0.33,5.38-1,7.5-1.75"],
+"や":["M18,49.38c1.88,1.62,5.25,2.5,8.62,0.88c18.51-8.88,35.76-19.38,50.83-19.26c9.02,0.14,16.01,4.13,15.93,12.29c0,8.33-10.88,16.58-24.5,17.83","M47.13,15.88c5.12,0.88,10.41,4.05,11.5,6.62c2.12,5-1,2.38-2.88,2.62","M30,24.38c2.38,1.88,3.28,2.87,3.88,5.25c2.62,10.5,11.12,41.12,14.75,52.5c0.65,2.04,1.88,6.25,2.88,9.38"],
+"ゆ":["M21.05,25.38c1.38,1.5,2.02,4.13,1.5,6.25c-2.88,11.75-4,22.25-2.12,35c2.77,18.85,1.12,3.88,3.25-1.5c9-22.75,27.24-34.5,44.38-34.5c16.88,0,21.88,11.38,21.88,20.25c0,27.38-30.88,29.62-43,16.75","M58.42,16.75c2.62,1.75,3.17,3.13,3.5,7.12c0.88,10.5,1.4,18.72,1.62,29.38c0.5,24-6.25,32-12.38,39.25"],
+"よ":["M58.24,35.38c7.5-1.28,13.74-2.63,18.5-4.1c2.5-0.77,4.77-1.15,6.25-1.15","M54.62,13.88c2.25,2.12,2.98,4.13,2.88,6.5c-0.75,17-0.12,34.88,1.39,53.5c1.88,23.07-34.89,20.88-34.89,11.5c0-12,26.25-8,35.98-4.12c8.1,3.23,11.52,4.88,18.52,10.38"],
+"ら":["M35.33,15c3.75,3,9.22,4.41,16.5,4.25c11.12-0.25-0.25,2.38-1.25,3.5","M35.83,35.75c-2.14,4.34-2.79,8.67-3.11,13.24c-0.42,5.84-0.31,12.05-2.14,19.13c-3.16,12.27,1.49,4.77,3,3.5c11.88-10,21.7-12.67,32.61-12.49c9.21,0.15,16.85,5.19,16.76,13.88c-0.12,13.6-14.24,21.49-32.49,22.49"],
+"り":["M38.75,25.25c1.25,1.5,2.24,4.03,1.62,6.62c-2.88,12.13-6.29,29.65-4.25,42.38c2,12.5,1.75-0.75,5.62-6.25","M69.37,18.75c2.25,2.12,2.88,4.12,2.88,6.5c0,2.38,0,26.38,0,35.75c0,16.5-5,25.75-12.62,33.12"],
+"る":["M34.31,20.38c1.75,1.25,4.62,2.62,8.5,1.5c3.88-1.12,9.62-2.5,15.62-4.62c6-2.12,7.5-0.12,4.38,4.25c-3.12,4.37-18.89,24.62-27.75,34c-8.5,9-13.09,11.89,0.75,3.25c15.62-9.75,43-10.88,43,13.38c0,22.5-40.88,24.5-40.88,12.62c0-11.25,18.12-8.75,24.38-0.38"],
+"れ":["M34.48,13c1.5,1.38,2.83,3.74,2.5,6.38c-0.5,4-2.75,44.5-2.75,52.88c0,8.38,0.12,16.62,0.12,19.5","M16.98,40.75c2.12,1.38,3.74,1.46,7.5,0c4.5-1.75,6.55-2.66,13-5.5c4.25-1.88,4.4,0.24,2.5,3.5c-5.25,9-10.5,16.75-18.88,27.62c-7.55,9.81-6.93,12.85,3.25,3.12c14-13.38,20.34-19.76,33.88-32.5c6.38-6,19.39-12.09,18.14,0.88c-1.02,10.63-1.89,22.13-2.29,30.75c-1.02,21.71,11.53,18,20.15,8.63"],
+"ろ":["M36.95,21.88c1.5,2,4.62,3.62,8.5,2.5c3.88-1.12,8.12-2.25,14.12-4.38c6-2.13,6.53-0.1,3.38,4.25c-7.88,10.88-18,22.75-27.5,35.25c-7.49,9.86-10.68,11.32,2.88,2.25c17.38-11.62,46.62-14,46.62,8.12c0,15.62-16,22.5-32.12,25.12"],
+"わ":["M38.53,14.75c1.5,1.38,2.22,3.73,2,6.38c-1,11.87-2.75,44.49-2.75,52.87c0,8.38-0.62,16.62-0.62,19.5","M17.53,40.75c2.12,1.38,3.68,1.3,7.5,0c5.88-2,9.8-3.16,16.25-6c4.25-1.88,6.12,0,2.75,4c-6.72,7.96-13,16.5-22.12,27.88c-7.75,9.66-7.54,12.21,3,2.88c21.88-19.38,49.75-35.62,63.5-21c14.36,15.27,1.62,36.62-23.38,42.62"],
+"を":["M28.56,27.87c1.62,1.13,3.17,1.64,6.01,1.12c10.86-1.99,16.74-3.37,24.71-4.72c3.64-0.62,5.65-0.93,8.4-0.75","M49.93,14.38c0.75,1,1.48,3.22,0.38,5.62c-4.62,10.12-10,20.75-17.12,30.25c-9.25,12.33-9.25,11.19,2.12,2.5c9-6.88,23.75-12.12,22.88,19.88","M83.06,39.88c0.62,1.75,0,4-3,5.75c-3,1.75-49.62,24.16-44.75,38.25c3.28,9.48,17.93,9.12,29.98,7.75c4.48-0.51,9.15-1.12,12.4-1.75"],
+"ん":["M56.35,16.5c0.75,1.75,1.13,5.83-0.38,8.25c-7,11.25-27.22,43.47-33.88,54.37c-9,14.75-7.62,16.25,1.5,1.25c17.86-29.36,32-23.76,32-6.75c0,25,19,26.5,34.25-5"]
+};
+
+/* カタカナ書き順データ: KanjiVG (Ulrich Apel ほか, CC BY-SA 3.0, http://kanjivg.tagaini.net) 由来 */
+const KKVG={
+"ア":["M23.5,26.25c2.41,1.56,3.98,1.44,8.51,0.75c11.4-1.75,37.77-5.5,48.28-6.78c5.23-0.64,7.99,2.06,2.62,6.04c-6.75,5-13.12,9.5-23.25,16","M53.12,41.12c0.79,1.5,1.02,3.24,0.58,5.28c-4.04,18.48-9.92,31.85-19.92,45.48"],
+"イ":["M69.75,16.75c0.12,1.75-0.34,3.86-1.62,5.5c-10.13,12.87-23.75,29.63-45.63,42.87","M56.38,43.88c1,1.12,1.25,3,1.25,4.62c0,1.62,0,32.75,0,34.62c0,1.87-0.13,9.13-0.13,11.76"],
+"ウ":["M53.25,14.62c1,1.12,1.25,3,1.25,4.62c0,1.62,0,10.76,0,12.64","M26.5,31.25c1,1.12,1.22,3,1.25,4.62c0.09,4.45,0.29,10.95,0.45,16.37c0.07,2.5,0.14,4.77,0.18,6.5","M29.12,35.88c19.38-2.25,40.25-4.25,49-5.5c8.75-1.25,8.28,0.84,6.25,6.88c-5,14.88-20.12,43.5-41,56.62"],
+"エ":["M31.87,35.68c2.32,0.71,5.14,0.66,7.48,0.29c8.57-1.35,22.4-2.85,33.66-3.85c2.26-0.2,4.52-0.19,6.77,0.22","M53.34,38.13c1,1.12,1.31,3,1.25,4.62c-0.18,4.74-0.51,12.89-0.83,22.25c-0.08,2.31-0.16,4.7-0.23,7.12","M19,75.46c3.41,0.94,7.57,0.88,11.01,0.39c17.78-2.48,34.53-3.86,50.55-3.9c3.34-0.01,7.23,0.42,10.46,1.8"],
+"オ":["M19.5,37.85c3.91,1.78,7.55,1.55,11.01,1.02c18.03-2.75,34.4-4.5,50.55-5.41c3.34-0.19,6.35,0.17,10.46,1.38","M60.38,16.38c1.32,1.49,1.65,3.97,1.65,6.12c0,8-0.25,46.23-0.25,58.63c0,20.38-5.88,7.5-9.25,5.5","M60.29,36.38c0,1.62-1.64,3.61-3.62,6c-7.88,9.5-21.12,22.75-34.62,33"],
+"カ":["M25.5,40.62c1.88,1.25,4.51,1.87,7.12,1.5c17.88-2.5,32.78-4.51,42.5-5.88c7.12-1,10.59,0.24,8.62,7.88c-2.12,8.25-4.47,17.81-9.25,29.12c-10.49,24.88-14.11,14.51-19.24,11.88","M55.88,17.12c0.88,1.62,1.29,3.83,0.75,6.75c-4.25,22.88-15.88,45.25-30.25,58.88"],
+"キ":["M27,40.5c1.75,0.62,4.77,1.09,7.25,0.38c11.75-3.38,30.62-8.13,37.5-9.88c2.62-0.67,6.75-1.12,9-1","M19.5,65.8c2.28,0.84,6.24,1.18,9.46,0.17c17.79-5.59,32.67-9.09,49.17-12.99c3.43-0.81,8.81-1.52,11.74-1.35","M48.87,16.75c2.5,1.75,3.43,3.24,3.88,6.12c2.12,13.62,6.38,45.38,8.25,59.25c0.4,3,1,8.38,1.38,11.12"],
+"ク":["M50,19.62c0.38,1.5,0.34,3.48-0.5,5.12c-4.12,8.12-7.88,15.5-16.12,24.12","M51.25,28.62c2.62,0.25,5.67-0.39,7.62-0.88c6-1.5,9.75-2.38,15.12-3.88c5.79-1.62,7.53-0.42,5.12,4.88c-10.36,22.88-26.24,44.14-48.61,60.51"],
+"ケ":["M40.96,17.88c0.44,1.9,0.39,4.42-0.59,6.5c-4.82,10.31-9.21,19.67-18.87,30.62","M37.88,37.62c2.12,0.88,4.15,1.04,6.62,0.5c12.62-2.75,25.5-4.88,35.75-6.5c3.61-0.57,6.25-0.75,9.25-0.5","M64.46,38.88c0.44,1.9,0.5,4.27-0.08,6.5c-3.63,13.75-9.25,31.25-24.63,43.87"],
+"コ":["M30.13,35c1.75,1,3.01,2.18,6.5,1.62c14.25-2.25,29.62-4.25,37.38-5.5c9.37-1.51,9.88,0.25,8,7.5c-2.77,10.71-5.25,22.12-7,34.88","M27.5,77.38c2.62,1.12,4.38,1.51,8.25,1c11.38-1.5,22.62-3,33.75-3.38c4-0.13,5.88,0,9.62,0.5"],
+"サ":["M16.5,44.34c2.84,1.27,4.77,1.91,8.93,1.13c17.2-3.22,40.45-5.35,58.53-5.34c4.33,0,6.92,0.37,10.42,0.82","M36.63,23.38c1.12,1.38,1.19,2.5,1.25,4.75c0.25,9,0.38,20.25,0.75,28.88c0.14,3.25,0.38,7.12,0.38,9.25","M69.63,16.62c1.5,2,1.62,2.87,1.62,6.25c0,8.25-0.16,9-0.16,15.88c0,23.25-9.34,42.5-23.21,53"],
+"シ":["M39.87,19.75c5.14,1.57,9.79,6.01,11.5,8.62","M26,42.62c3.25,0.88,10.25,5.5,12.25,8.13","M33,85c3.75,0.88,7.12,0.49,10.38-1.38c17.87-10.24,32.37-23.87,46.12-42.87"],
+"ス":["M30.13,29.38c1.75,1.5,4.15,1.98,6.62,1.38c13.25-3.25,24.25-5.62,31.25-7.38c7-1.76,8.64,1.16,6.5,5.75c-11.24,24.12-28.37,45.87-53.5,57.25","M61,57.25c11,7.38,21,17,28,28.62"],
+"セ":["M17,49.38c3.12,1.5,5.04,2.18,8.62,1.38c23.5-5.25,31.24-7.43,50.62-11.62c23.12-5,6.5,7.75-3.25,18.12","M42.38,19.5c2,2.25,2.15,3.5,2.12,6.62c-0.12,17.5-0.88,31.75-0.88,41.12c0,14,3.13,16.99,12.38,17.12c8.38,0.12,14.12,0.12,18,0.12c3.88,0,7.5-0.5,10.5-1.12"],
+"ソ":["M23.5,25.5c3.92,4.1,7.71,9.93,10.75,17.88","M83.5,21c1.25,2.5,1.3,4.44,0.12,8.5c-5.87,20.38-26.24,49.5-45.62,61.25"],
+"タ":["M48.83,19.75c0.43,1.72,0.39,4-0.58,5.89c-4.77,9.34-9.1,17.82-18.63,27.73","M49.75,30.38c2.75,0.5,5,0,7.62-0.62c6.02-1.43,10.5-2.62,15.88-4.12c5.79-1.62,8.22,0.31,5.88,5.62c-10.88,24.62-22.13,43.99-50.13,59.99","M43.38,45.62c6.75,3.5,10.62,7.88,14.75,15.25"],
+"チ":["M69.76,15.25c-0.38,2.62-2.01,4.37-3.88,5.38c-7.88,4.25-18.62,9.75-35.5,13.25","M18.5,51.5c2.88,0.88,4.39,1.65,7.88,1.25c22-2.5,36.38-4.25,56.12-4.88c4.88-0.15,7.88,0.51,10.88,1.51","M54.88,30.75c0.88,0.75,1.75,2.49,1.75,4.75c0,6.03,0.03,11.25,0.03,18.27c0,14.98-5.03,29.48-16.53,39.23"],
+"ツ":["M21.5,31.38c2.38,3,4.5,9.38,4.88,13.88","M45.62,23.75c3.38,3.5,6.62,9.5,7,14.88","M84.62,27.88c0.75,2.25,0.39,5.26-0.75,8c-7.63,18.37-21.25,41.12-46,52.5"],
+"テ":["M36.5,21.5c2.12,1.25,4.38,1.59,7.25,1.25c10.62-1.25,16.88-2.25,24.62-3.25c3.73-0.48,5.63-0.5,8.13-0.25","M20,44.12c2.88,1,5.26,1.05,7.5,0.75c22.38-3,37-5.62,54.13-6.12c5.62-0.16,7.75,0,10.38,0.62","M58,43.25c0.88,1,1.32,2.63,1.12,4.38c-1.74,15.37-11.62,34.99-24.62,41.87"],
+"ト":["M44,16.38c1.25,1.12,2.12,3.25,2.12,5.5c0,26.12,0,53.5,0,57.62c0,4.12,0,10.5,0,13.38","M49.24,43.12c11.75,4.12,18.25,10.62,24.5,18.75"],
+"ナ":["M18.5,44.12c2.62,1,4.77,1.17,9.12,0.5c19.38-3,37.75-4.75,52.38-5.62c3.75-0.22,8.88-0.25,11.88,0.12","M53.26,14.5c1.75,1.25,2.75,3,2.75,6c0,3,0.12,21.5,0.12,24.25c0,20-6,37.62-18.38,49.12"],
+"ニ":["M32.63,34.69c2.5,1.19,4.33,1.6,7.45,1.35c11.55-0.91,18.3-2.41,27.04-3.18c2.64-0.23,6.27-0.16,8.39,0.08","M20,74.88c2.62,1,4.78,1.45,9.12,0.75c20.25-3.25,36.5-3.88,52.38-3.88c3.75,0,8,1,11.12,2.38"],
+"ヌ":["M33.38,27.62c2.75,1.25,5.38,1.16,8.5,0.62c10.12-1.75,19-3.12,28.62-5c6.67-1.3,7.75-0.12,5.38,5.62c-6.7,16.22-20.63,40.52-48.88,57.89","M44.88,46.38c12,6.75,22.38,15.38,30.62,28.12"],
+"ネ":["M51.38,12.38c3.38,2.12,8,5.88,11,10.88","M26.88,36.16c2.62,1.46,5.45,1.93,8.5,1.19c10.75-2.6,20.75-4.98,30.88-7.5c6.53-1.62,7.81,1.27,4.62,4.68c-11.63,12.47-22.76,23.35-48.88,37.97","M54.38,54.12c1.38,1.75,1.62,3.5,1.62,6c0,2.5,0,27.5,0,29.38c0,1.88,0,4,0,6.88","M65.38,53.62c12.5,6,19.88,11.75,24.88,18.88"],
+"ノ":["M72.37,25.25c0.75,2,0.92,4.89,0.25,7.25c-7.12,25-25.38,44.75-43.62,56.88"],
+"ハ":["M39.33,36.88c0.38,1.14,0.46,2.88-0.12,4.14c-6.33,13.73-13.33,23.86-22.21,32.23","M65.5,36.38c13,9.12,23.12,22.62,28,33.38"],
+"ヒ":["M35.38,44.5c1.75,1.38,4.51,2.19,6.88,1.88c10.24-1.38,17.24-2.88,24.24-4.26c3.01-0.59,7.12-1,9.38-0.88","M31,17.62c1.38,1.26,1.88,3.38,1.88,6.13c0,2.75-0.88,44-0.88,47.25c0,9.75,4,14.62,13.75,14.62c6,0,16.38,0.12,21.38,0c5-0.12,9.5-0.62,13.5-1.5"],
+"フ":["M24.5,30c1.88,1.88,3.5,2.04,6.5,1.62c14.5-2,29-4.38,43.75-6.88c6.82-1.16,10.58,2.29,6.88,9.12c-10.38,19.14-21.25,39.52-50.01,53.64"],
+"ヘ":["M15.5,49.02c2.78,1.55,5.39,0.64,6.95-0.9c4.05-4.01,9.47-8.3,12-10.88c3.16-3.23,7.32-5.26,12.01-1.16c11.25,9.82,25.03,21.45,35.78,30.36c4.28,3.55,7.71,6.85,11.25,9.56"],
+"ホ":["M22.63,40.38c2.62,1,4.75,1.71,9.12,1.25c17.75-1.88,29.25-2.75,45.38-3.88c3.74-0.26,7.38-0.12,11.12,0.62","M53.75,17.12c1.38,1.88,1.38,4.5,1.38,7.38c0,2.88-0.12,46.62-0.12,51.88c0,23.12-6.25,11.25-9.75,9.62","M27.38,59.38c0.5,9.25-1.38,16.62-6.38,21.88","M73.25,52.75c10.88,9.63,15.5,17.63,16.63,24.87"],
+"マ":["M21.5,33.75c1.88,1.88,3.5,1.99,6.5,1.62c19.62-2.38,33.5-4,51.25-6.38c6.85-0.92,9.37,1.67,4.38,7.62c-7.12,8.5-17.88,20-28.75,31.62","M43.38,58.88c8.43,6.5,16.6,15.93,20.25,26.25"],
+"ミ":["M41.87,20c10.4,2.57,20.5,6.3,25,10.38","M42,46.88c10.72,2.69,21.11,6.6,25.75,10.88","M36.5,75c15.71,4.49,30.95,11,37.75,18.12"],
+"ム":["M53.84,22.5c0.88,1.75,0.78,4.57-0.38,6.88c-9.25,18.38-16.19,30.96-25.25,45.75c-3.75,6.12-3,8.38,4.38,7.12c7.38-1.26,46.62-8.12,49.62-8.88","M72.21,60.12c6.88,6.38,13.62,14.88,16,25.38"],
+"メ":["M73.38,19.12c0.88,1.75,0.48,4.44-0.38,6.88c-7.75,22.12-21.75,47.62-45,62.88","M39.51,39.5c16.54,7.76,32.12,18,38.5,30.88"],
+"モ":["M27.88,26.19c2.5,1.19,4.33,1.6,7.45,1.35c11.55-0.91,21.93-2.16,32.79-3.93c2.62-0.42,6.27-0.41,8.39-0.17","M17.5,54.38c2.62,1,4.78,1.45,9.12,0.75c20.26-3.25,33.88-5.38,51.64-6.13c3.75-0.16,7.38,0.25,11.12,0.88","M48.76,29.88c1.12,1.62,1.42,3.62,1.42,6.12c0,6.53-0.65,33.56-0.65,35.88c0,7.67,3.09,11.08,10.53,11.76c5.33,0.49,12.31,0.24,16.37,0c4.46-0.26,6.52-0.74,9.59-1.43"],
+"ヤ":["M18,45.75c2.12,1.62,6.15,2.35,10.12,1.38c18.88-4.62,33.39-7.83,48.88-11.88c22-5.75,1.5,14.25-2.75,20","M38.47,19.38c1.65,1.4,2.54,2.67,3.18,5.21c0.64,2.54,11.95,52.9,12.59,55.57c0.64,2.67,2.16,9.16,3.05,12.46"],
+"ユ":["M29.5,35.38c2.38,1.5,5.14,2.08,9.25,1.5c13.25-1.88,18.02-2.4,27.62-4c6.75-1.12,7.78,0.16,6.5,6.38c-2.38,11.5-4.88,24.5-6.5,34.5","M17,76.88c2.75,1.5,4.76,2.05,9.12,1.5c22.62-2.88,36-3.88,54.12-3.88c3.75,0,7.38,0.5,11.12,1.12"],
+"ヨ":["M29.13,30.12c2.38,1.5,5.12,1.98,9.25,1.5c14-1.62,26.71-3.04,36.38-4.25c6-0.75,6.88,0.5,6.5,6.38c-1,15.51-1.89,30.63-3.01,42.25","M29.25,52.88c2.38,1.5,5.12,1.98,9.25,1.5c10.5-1.22,22.81-2.29,31.11-3.04c2.77-0.25,5.27,0.04,7.77,0.54","M23.5,78.84c2.75,1.3,4.74,1.68,9.12,1.3c12.5-1.08,29.37-2.9,41.38-2.9c3.38,0,5.62,0,9.38,0.54"],
+"ラ":["M38.63,21.06c2.07,1.86,4.43,2.53,8.05,2.15c9.2-0.96,14.34-2.01,21.57-2.95c2.41-0.31,4.13-0.53,6.51-0.19","M26,41.89c2.38,1.7,5.12,2.24,9.25,1.7c14-1.84,31.21-4.95,40.88-6.32c6-0.85,8.14,0.62,6.25,5.72c-6.88,18.62-22,38.25-45.25,48.62"],
+"リ":["M35,18.38c1.12,1.5,1.62,3,1.62,4.88c0,1.88,0,25,0,27c0,2,0,6.12,0,7.75","M71,15.38c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,28.88-0.12,32.88c0,19.62-9.5,32.25-21.75,40.38"],
+"ル":["M34.38,31.88c1.12,1.5,1.72,3,1.62,4.88c-1.12,22.88-8.88,40.62-17.5,49.5","M56.51,19.62c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,47.62-0.12,51.62c0,10.5,0.52,10.21,9.38,2.75c9.5-8,16.5-14.62,26.38-25.62"],
+"レ":["M34.5,19.75c1.5,1.25,2.38,3.12,2.38,5.38c0,2.26-0.12,50.12-0.12,54.12c-0.02,8.75-0.14,8.63,9.36,3.75c13.23-6.79,33.38-22.5,43.25-33.5"],
+"ロ":["M25,33.25c1.5,1.25,2.16,3.14,2.38,5.38c0.96,10.07,2.14,23.67,3.14,34.88c0.31,3.4,0.59,6.58,0.86,9.38","M28.13,36.12c9.25-1,37.62-3.12,45.62-4.25c8-1.13,9.57,0.53,8.38,6.62c-2.13,10.89-4.13,21.89-6.75,34.89","M32,78.12c5.38-0.5,33.62-3,36.5-3c2.88,0,7.88-0.25,11.5,0.25"],
+"ワ":["M25,23.62c1.5,1.25,2.16,3.14,2.38,5.38c0.96,10.07,0.89,8.17,1.89,19.38c0.31,3.4,0.59,6.58,0.86,9.38","M27.75,26.38c3.12,0.38,5.16,0.22,8.23-0.06c13.77-1.29,27.15-2.32,41.65-3.7c8.04-0.76,9.44,0.51,8.38,6.62c-4.76,27.26-20.64,47.64-43.88,61.51"],
+"ヲ":["M30.24,25.14c2.38,1.7,5.11,2.13,9.25,1.7c12.32-1.29,21.94-2.6,30.48-3.64c2.81-0.34,5.51-0.65,8.14-0.93","M29,46.69c2.25,1.44,4.44,1.9,8.05,1.4c8.19-1.15,19.93-2.64,28.56-3.79c2.38-0.31,4.65-0.62,6.75-0.92","M78,22.88c0.88,2,0.62,4.64,0.12,7c-4.88,22.5-23.5,47.12-44.12,60.74"],
+"ン":["M26.5,24.88c5.76,2.15,12.68,8.47,15.75,14.25","M28.62,83.75c2.5,1.62,5.12,0.96,7.75-0.62c20.13-12.13,35-24.63,49.63-41.13"]
+};
+/* すうじ・ABC の書き順ストローク（みる再生用ポリライン 0..1） */
+const STROKEPATH={
+"0":[[[0.5,0.22],[0.38,0.3],[0.33,0.5],[0.38,0.7],[0.5,0.78],[0.62,0.7],[0.67,0.5],[0.62,0.3],[0.5,0.22]]],
+"1":[[[0.4,0.34],[0.5,0.24],[0.5,0.78]]],
+"2":[[[0.36,0.33],[0.43,0.24],[0.55,0.24],[0.62,0.33],[0.58,0.46],[0.4,0.66],[0.34,0.77],[0.66,0.77]]],
+"3":[[[0.37,0.3],[0.5,0.23],[0.62,0.31],[0.52,0.47],[0.42,0.48],[0.55,0.5],[0.63,0.62],[0.55,0.75],[0.4,0.77],[0.34,0.69]]],
+"4":[[[0.58,0.22],[0.33,0.58],[0.68,0.58]],[[0.58,0.22],[0.58,0.78]]],
+"5":[[[0.62,0.24],[0.4,0.24],[0.39,0.48],[0.52,0.44],[0.63,0.52],[0.62,0.66],[0.5,0.77],[0.36,0.73]]],
+"6":[[[0.62,0.26],[0.46,0.36],[0.37,0.55],[0.38,0.69],[0.48,0.78],[0.6,0.74],[0.65,0.61],[0.57,0.5],[0.44,0.5],[0.37,0.58]]],
+"7":[[[0.34,0.25],[0.66,0.25],[0.46,0.78]]],
+"8":[[[0.5,0.22],[0.4,0.29],[0.42,0.42],[0.55,0.5],[0.62,0.62],[0.53,0.77],[0.4,0.73],[0.39,0.59],[0.52,0.5],[0.6,0.36],[0.55,0.25],[0.5,0.22]]],
+"9":[[[0.62,0.42],[0.56,0.28],[0.44,0.27],[0.37,0.37],[0.42,0.48],[0.56,0.49],[0.62,0.4],[0.62,0.55],[0.54,0.72],[0.44,0.78]]],
+"A":[[[0.5,0.2],[0.32,0.78]],[[0.5,0.2],[0.68,0.78]],[[0.39,0.56],[0.61,0.56]]],
+"B":[[[0.34,0.2],[0.34,0.78]],[[0.34,0.2],[0.55,0.25],[0.58,0.38],[0.48,0.48],[0.34,0.49],[0.52,0.52],[0.62,0.63],[0.55,0.75],[0.34,0.78]]],
+"C":[[[0.64,0.32],[0.54,0.24],[0.42,0.26],[0.34,0.4],[0.33,0.56],[0.4,0.71],[0.54,0.76],[0.64,0.69]]],
+"D":[[[0.34,0.2],[0.34,0.78]],[[0.34,0.2],[0.55,0.27],[0.64,0.49],[0.56,0.71],[0.34,0.78]]],
+"E":[[[0.36,0.2],[0.36,0.78]],[[0.36,0.2],[0.64,0.2]],[[0.36,0.49],[0.58,0.49]],[[0.36,0.78],[0.64,0.78]]],
+"F":[[[0.36,0.2],[0.36,0.78]],[[0.36,0.2],[0.64,0.2]],[[0.36,0.49],[0.58,0.49]]],
+"G":[[[0.64,0.32],[0.52,0.24],[0.4,0.27],[0.34,0.42],[0.34,0.58],[0.42,0.72],[0.56,0.76],[0.64,0.68],[0.64,0.54],[0.52,0.54]]],
+"H":[[[0.34,0.2],[0.34,0.78]],[[0.66,0.2],[0.66,0.78]],[[0.34,0.49],[0.66,0.49]]],
+"I":[[[0.5,0.2],[0.5,0.78]]],
+"J":[[[0.62,0.2],[0.62,0.62],[0.55,0.74],[0.43,0.76],[0.35,0.66]]],
+"K":[[[0.36,0.2],[0.36,0.78]],[[0.64,0.2],[0.36,0.5]],[[0.42,0.46],[0.66,0.78]]],
+"L":[[[0.36,0.2],[0.36,0.78],[0.64,0.78]]],
+"M":[[[0.32,0.78],[0.32,0.2],[0.5,0.56],[0.68,0.2],[0.68,0.78]]],
+"N":[[[0.34,0.78],[0.34,0.2],[0.66,0.78],[0.66,0.2]]],
+"O":[[[0.5,0.22],[0.37,0.31],[0.32,0.5],[0.37,0.69],[0.5,0.78],[0.63,0.69],[0.68,0.5],[0.63,0.31],[0.5,0.22]]],
+"P":[[[0.34,0.2],[0.34,0.78]],[[0.34,0.2],[0.56,0.25],[0.6,0.39],[0.5,0.5],[0.34,0.52]]],
+"Q":[[[0.5,0.22],[0.37,0.31],[0.32,0.5],[0.37,0.69],[0.5,0.78],[0.63,0.69],[0.68,0.5],[0.63,0.31],[0.5,0.22]],[[0.56,0.62],[0.7,0.82]]],
+"R":[[[0.34,0.2],[0.34,0.78]],[[0.34,0.2],[0.56,0.25],[0.59,0.39],[0.49,0.49],[0.34,0.5]],[[0.45,0.49],[0.66,0.78]]],
+"S":[[[0.63,0.3],[0.52,0.24],[0.41,0.26],[0.36,0.37],[0.45,0.47],[0.58,0.53],[0.63,0.65],[0.52,0.76],[0.39,0.74],[0.34,0.65]]],
+"T":[[[0.3,0.22],[0.7,0.22]],[[0.5,0.22],[0.5,0.78]]],
+"U":[[[0.34,0.2],[0.34,0.6],[0.4,0.73],[0.5,0.77],[0.6,0.73],[0.66,0.6],[0.66,0.2]]],
+"V":[[[0.34,0.2],[0.5,0.78]],[[0.66,0.2],[0.5,0.78]]],
+"W":[[[0.3,0.2],[0.4,0.78],[0.5,0.36],[0.6,0.78],[0.7,0.2]]],
+"X":[[[0.34,0.2],[0.66,0.78]],[[0.66,0.2],[0.34,0.78]]],
+"Y":[[[0.34,0.2],[0.5,0.5],[0.5,0.78]],[[0.66,0.2],[0.5,0.5]]],
+"Z":[[[0.34,0.22],[0.66,0.22],[0.34,0.76],[0.66,0.76]]]
+};
+const GEO=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg'); svg.style.cssText='position:absolute;left:-9999px;top:-9999px;width:0;height:0';
+  const path=document.createElementNS(NS,'path'); svg.appendChild(path);
+  if(document.body) document.body.appendChild(svg); else document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(svg));
+  return {
+    start(d){ path.setAttribute('d',d); let len=32; try{len=path.getTotalLength()||32;}catch(e){} const a=path.getPointAtLength(0); const b=path.getPointAtLength(Math.min(8,len*0.3)); return {x:a.x,y:a.y,dx:b.x-a.x,dy:b.y-a.y}; },
+    samples(d,step){ path.setAttribute('d',d); let len=0; try{len=path.getTotalLength()||0;}catch(e){} const n=Math.max(2,Math.ceil(len/(step||3))); const out=[]; for(let i=0;i<=n;i++){ const p=path.getPointAtLength(len*i/n); out.push({x:p.x,y:p.y}); } return out; }
+  };
+})();
+
+/* ---------- trace (font-coverage engine) ---------- */
+const THRESH=0.75;   // 文字の何割を塗れたらクリアか（多画文字が1画で終わらない高さ。甘さ調整はここ）
+function renderTrace(key, ch){
+  const cat=catOf(key);
+  const isWord=!!cat.word;
+  const pic=isWord?picOf(cat,ch):'';
+  const acceptLine=isWord?0.45:0.6;   // ✓「できた」で認める塗り割合（手動判定なのでやさしめ）
+  const kvgD = (key==='hira' && typeof HKVG!=='undefined' && HKVG[ch]) ? HKVG[ch]
+             : (key==='kata' && typeof KKVG!=='undefined' && KKVG[ch]) ? KKVG[ch] : null;
+  const canWatch = !!kvgD || (typeof STROKEPATH!=='undefined' && !!STROKEPATH[ch]);
+  const label=isWord
+    ? `${pic?`<span class="hint-emo">${pic}</span> `:''}<b>${ch}</b> を なぞってね`
+    : 'うすい もじを なぞってね';
+  app.innerHTML=`
+  <div class="screen">
+    <div class="play-head">
+      <button class="back" id="back">‹ もどる</button>
+      <div class="bigc${isWord?' word':''}">${ch}</div>
+      <button class="speaker" id="spk">🔊</button>
+    </div>
+    <div class="trace-label">${label}</div>
+    <div class="canvas-wrap"><canvas id="cv"></canvas></div>
+    <div class="footer-btns">
+      <button class="btn ghost" id="order"></button>
+      ${canWatch?'<button class="btn ghost" id="watch">▶ みる</button>':''}
+      <button class="btn ghost" id="clear">もういちど</button>
+      <button class="btn grass done-btn" id="done">✓ できた</button>
+    </div>
+  </div>`;
+  $('#back').onclick=()=>{ clearTimeout(settleT); renderGrid(key); };
+  $('#spk').onclick=()=>speak(cat.say(ch), cat.lang);
+  const orderBtn=$('#order');
+  function syncOrderBtn(){ orderBtn.textContent = ORDER_ON?'① 書き順 ✓':'① 書き順'; }
+  syncOrderBtn();
+  orderBtn.onclick=()=>{ if(playing)return; ORDER_ON=!ORDER_ON; state.orderOn=ORDER_ON; saveState(); syncOrderBtn(); redraw(); };
+
+  const cv=$('#cv'), ctx=cv.getContext('2d');
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  let side,fontSize,baseOff,S,R,cols,rows,target,covered,totalT,coveredN,strokes=[],drawing=false,done=false,penSeen=false,settleT=null,playing=false;
+  let kscale=1,koff=0,kpaths=null,kstarts=null;
+  const useKvg=(key==='hira' && typeof HKVG!=='undefined' && !!HKVG[ch]);
+  const FONT=()=>'bold '+fontSize+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
+
+  function layout(){
+    const wrap=cv.parentElement;
+    const avail=Math.min(wrap.clientWidth, wrap.clientHeight);
+    side=Math.max(240, avail-6);
+    cv.style.width=side+'px'; cv.style.height=side+'px';
+    cv.width=side*dpr; cv.height=side*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    S=Math.min(8, Math.max(4, Math.round(side/58)));
+    cols=Math.ceil(side/S); rows=Math.ceil(side/S);
+    if(useKvg){
+      const pad=side*0.09; kscale=(side-2*pad)/109; koff=(side-109*kscale)/2;
+      R=side*0.06;
+      kpaths=HKVG[ch].map(d=>new Path2D(d));
+      kstarts=HKVG[ch].map(d=>GEO.start(d));
+      buildMaskKvg();
+    } else {
+      baseOff=side*0.04;
+      if(isWord && ch.length>1){
+        const oc=document.createElement('canvas').getContext('2d');
+        let fs=side*0.6;
+        oc.font='bold '+fs+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
+        const maxW=side*0.88, w=oc.measureText(ch).width||1;
+        if(w>maxW) fs=Math.floor(fs*maxW/w);
+        fontSize=fs; R=side*0.052;
+      } else {
+        fontSize=side*0.72; R=side*0.075;
+      }
+      buildMaskFont();
+    }
+    if(kvgD && !useKvg){   // カタカナ等: 判定はフォント、書き順バッジ/みるは KanjiVG を重ねる
+      const pad=side*0.09; kscale=(side-2*pad)/109; koff=(side-109*kscale)/2;
+      kstarts=kvgD.map(d=>GEO.start(d));
+    }
+    strokes=[]; covered=new Uint8Array(cols*rows); coveredN=0; done=false;
+    redraw();
+  }
+  function buildMaskFont(){
+    const off=document.createElement('canvas'); off.width=side; off.height=side;
+    const o=off.getContext('2d');
+    o.fillStyle='#000'; o.textAlign='center'; o.textBaseline='middle'; o.font=FONT();
+    o.fillText(ch, side/2, side/2+baseOff);
+    const data=o.getImageData(0,0,side,side).data;
+    target=new Uint8Array(cols*rows); totalT=0;
+    for(let gy=0; gy<rows; gy++){
+      for(let gx=0; gx<cols; gx++){
+        const x=Math.min(side-1, gx*S+(S>>1)), y=Math.min(side-1, gy*S+(S>>1));
+        if(data[(y*side+x)*4+3] > 100){ target[gy*cols+gx]=1; totalT++; }
+      }
+    }
+    if(totalT===0) totalT=1;
+  }
+  function buildMaskKvg(){
+    const off=document.createElement('canvas'); off.width=side; off.height=side;
+    const o=off.getContext('2d');
+    o.lineCap='round'; o.lineJoin='round'; o.strokeStyle='#000';
+    o.setTransform(1,0,0,1,0,0); o.translate(koff,koff); o.scale(kscale,kscale);
+    o.lineWidth=(side*0.085)/kscale;
+    kpaths.forEach(p=>o.stroke(p));
+    o.setTransform(1,0,0,1,0,0);
+    const data=o.getImageData(0,0,side,side).data;
+    target=new Uint8Array(cols*rows); totalT=0;
+    for(let gy=0; gy<rows; gy++){
+      for(let gx=0; gx<cols; gx++){
+        const x=Math.min(side-1, gx*S+(S>>1)), y=Math.min(side-1, gy*S+(S>>1));
+        if(data[(y*side+x)*4+3] > 100){ target[gy*cols+gx]=1; totalT++; }
+      }
+    }
+    if(totalT===0) totalT=1;
+  }
+  function drawGuide(){
+    if(useKvg){
+      ctx.save(); ctx.translate(koff,koff); ctx.scale(kscale,kscale);
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.strokeStyle='#dde6ee'; ctx.lineWidth=(side*0.075)/kscale;
+      kpaths.forEach(p=>ctx.stroke(p));
+      ctx.restore();
+    } else {
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=FONT();
+      ctx.fillStyle='#dde6ee'; ctx.fillText(ch, side/2, side/2+baseOff);
+      ctx.lineWidth=2; ctx.strokeStyle='#b9c8d8'; ctx.strokeText(ch, side/2, side/2+baseOff);
+    }
+  }
+  function drawInk(){
+    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=side*0.05;
+    strokes.forEach(st=>{ if(st.length<2){ if(st.length===1){ ctx.beginPath(); ctx.arc(st[0].x,st[0].y,side*0.025,0,7); ctx.fillStyle='#ff7a59'; ctx.fill(); } return; } ctx.beginPath(); st.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); });
+  }
+  function drawOrder(force){
+    if(!ORDER_ON && !force) return;
+    let pts;
+    if(kvgD && kstarts){
+      pts=kstarts.map(s=>({x:koff+s.x*kscale, y:koff+s.y*kscale, dx:s.dx, dy:s.dy}));
+    } else if(typeof STROKEPATH!=='undefined' && STROKEPATH[ch]){
+      pts=STROKEPATH[ch].map(p=>{ const a=p[0], b=p[1]||p[0]; return {x:a[0]*side, y:a[1]*side, dx:b[0]-a[0], dy:b[1]-a[1]}; });
+    } else {
+      const list=STROKES[ch]; if(!list) return;
+      pts=list.map(s=>({x:s[0]*side, y:s[1]*side, dx:s[2], dy:s[3]}));
+    }
+    const placed=[], rC=side*0.046, minD=rC*1.85;
+    pts.forEach((p,i)=>{
+      const mag=Math.hypot(p.dx,p.dy)||1, ux=p.dx/mag, uy=p.dy/mag;
+      let x=p.x, y=p.y, tries=0;
+      while(tries<6 && placed.some(q=>Math.hypot(q.x-x,q.y-y)<minD)){ x+=ux*minD*0.75; y+=uy*minD*0.75; tries++; }
+      placed.push({x,y});
+      const L=side*0.085, ax=x+ux*L, ay=y+uy*L;
+      ctx.lineCap='round'; ctx.strokeStyle='#ff2d6f'; ctx.lineWidth=Math.max(2,side*0.008);
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ax,ay); ctx.stroke();
+      const ang=Math.atan2(ay-y,ax-x), hl=side*0.032;
+      ctx.beginPath(); ctx.moveTo(ax,ay);
+      ctx.lineTo(ax-hl*Math.cos(ang-0.5), ay-hl*Math.sin(ang-0.5));
+      ctx.lineTo(ax-hl*Math.cos(ang+0.5), ay-hl*Math.sin(ang+0.5));
+      ctx.closePath(); ctx.fillStyle='#ff2d6f'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,rC,0,7); ctx.fillStyle='#ff2d6f'; ctx.fill();
+      ctx.lineWidth=Math.max(1.5,side*0.006); ctx.strokeStyle='#fff'; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='bold '+(side*0.052)+'px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(i+1), x, y+side*0.004);
+    });
+  }
+  function redraw(){ ctx.clearRect(0,0,cv.width,cv.height); drawGuide(); drawInk(); drawOrder(); }
+
+  // ---- 「みる」: 正しい書き順を一画ずつ書いて見せる ----
+  function densify(poly){ const out=[]; for(let i=0;i<poly.length-1;i++){ const a=poly[i],b=poly[i+1],seg=10; for(let s=0;s<seg;s++) out.push({x:(a[0]+(b[0]-a[0])*s/seg)*side, y:(a[1]+(b[1]-a[1])*s/seg)*side}); } const L=poly[poly.length-1]; out.push({x:L[0]*side,y:L[1]*side}); return out; }
+  function demoStrokes(){
+    if(kvgD) return kvgD.map(d=> GEO.samples(d,3).map(p=>({x:koff+p.x*kscale, y:koff+p.y*kscale})) );
+    if(typeof STROKEPATH!=='undefined' && STROKEPATH[ch]) return STROKEPATH[ch].map(poly=>densify(poly));
+    return null;
+  }
+  function playStrokes(){
+    if(playing) return; const demo=demoStrokes(); if(!demo) return;
+    playing=true; clearTimeout(settleT);
+    const safety=setTimeout(()=>{ playing=false; if(document.body.contains(cv)) redraw(); }, 9000); // 固まり防止
+    const drawn=[]; let si=0;
+    const drawPoly=pts=>{ if(pts.length<2)return; ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); };
+    function frameDraw(active){
+      ctx.clearRect(0,0,cv.width,cv.height); drawGuide();
+      ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=side*0.05;
+      drawn.forEach(drawPoly); if(active) drawPoly(active);
+      drawOrder(true);
+      if(active&&active.length){ const p=active[active.length-1]; ctx.beginPath(); ctx.arc(p.x,p.y,side*0.03,0,7); ctx.fillStyle='#ff2d6f'; ctx.fill(); ctx.lineWidth=Math.max(2,side*0.008); ctx.strokeStyle='#fff'; ctx.stroke(); }
+    }
+    function playOne(){
+      if(!document.body.contains(cv)){ playing=false; return; }
+      if(si>=demo.length){ playing=false; clearTimeout(safety); setTimeout(()=>{ if(document.body.contains(cv)) redraw(); }, 600); return; }
+      const pts=demo[si]; let k=1; const step=Math.max(1,Math.round(pts.length/36));
+      (function frame(){
+        if(!document.body.contains(cv)){ playing=false; return; }
+        k+=step; const active=pts.slice(0,Math.min(k,pts.length)); frameDraw(active);
+        if(k<pts.length) requestAnimationFrame(frame);
+        else { drawn.push(pts); si++; setTimeout(playOne,350); }
+      })();
+    }
+    playOne();
+  }
+
+  function pt(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  function mark(p){
+    const gx0=Math.max(0,Math.floor((p.x-R)/S)), gx1=Math.min(cols-1,Math.floor((p.x+R)/S));
+    const gy0=Math.max(0,Math.floor((p.y-R)/S)), gy1=Math.min(rows-1,Math.floor((p.y+R)/S));
+    const R2=R*R;
+    for(let gy=gy0; gy<=gy1; gy++){
+      for(let gx=gx0; gx<=gx1; gx++){
+        const idx=gy*cols+gx;
+        if(target[idx] && !covered[idx]){
+          const cx=gx*S+(S>>1), cy=gy*S+(S>>1);
+          if((p.x-cx)**2+(p.y-cy)**2 <= R2){ covered[idx]=1; coveredN++; }
+        }
+      }
+    }
+  }
+  const coverage=()=> coveredN/totalT;
+
+  cv.addEventListener('pointerdown',e=>{ if(done||playing)return; clearTimeout(settleT); if(penSeen&&e.pointerType==='touch')return; if(e.pointerType==='pen')penSeen=true; e.preventDefault(); drawing=true; const p=pt(e); strokes.push([p]); mark(p); try{cv.setPointerCapture(e.pointerId);}catch(_){} redraw(); });
+  cv.addEventListener('pointermove',e=>{ if(!drawing||done||playing)return; if(penSeen&&e.pointerType==='touch')return; e.preventDefault(); const p=pt(e); strokes[strokes.length-1].push(p); mark(p); redraw(); });
+  // 判定は自動ではなく「✓ できた」タップで（途中で切れて誤判定されないように）
+  const lift=()=>{ if(!drawing)return; drawing=false; };
+  cv.addEventListener('pointerup',lift); cv.addEventListener('pointercancel',lift);
+  // iOS: keep the page from scrolling / bouncing while drawing
+  cv.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
+  cv.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+
+  $('#clear').onclick=()=>{ if(playing)return; clearTimeout(settleT); strokes=[]; covered=new Uint8Array(cols*rows); coveredN=0; done=false; redraw(); };
+  { const wb=$('#watch'); if(wb) wb.onclick=()=>{ playStrokes(); }; }
+  $('#done').onclick=()=>{
+    if(playing||done) return;
+    if(coverage()>=acceptLine){ success(); }
+    else {
+      const lb=$('.trace-label');
+      if(lb){ const o=lb.innerHTML; lb.innerHTML='もうすこし なぞってね 🖍️'; lb.style.color='#ff2d6f';
+        setTimeout(()=>{ const cur=$('.trace-label'); if(cur===lb){ lb.innerHTML=o; lb.style.color=''; } },1300); }
+    }
+  };
+
+  function success(){
+    if(done || !document.body.contains(cv))return; done=true; drawing=false;
+    chime('correct'); speak(cat.say(ch), cat.lang);
+    const firstTime=!state.done[dk(key,ch)];
+    state.done[dk(key,ch)]=true;
+    if(firstTime){ if(!Array.isArray(state.cars)) state.cars=[]; state.cars.push(Math.floor(Math.random()*JR_LINES.length)); }
+    saveState();
+    setTimeout(()=>renderReward(key,ch,firstTime),650);
+  }
+
+  requestAnimationFrame(()=>{ layout(); setTimeout(()=>speak(cat.say(ch), cat.lang),420); });
+  let rT; window.addEventListener('resize', ()=>{ clearTimeout(rT); rT=setTimeout(layout,150); });
+}
+
+function collectionTrainHtml(markLast){
+  const cars=state.cars||[];
+  let h='<span class="ceng"><span class="ceng-body"><span class="ceng-win"></span><span class="ceng-light"></span></span><b class="ccar-wheel" style="left:16%"></b><b class="ccar-wheel" style="right:16%"></b></span>';
+  cars.forEach((idx,i)=>{
+    const line=JR_LINES[idx]||JR_LINES[0];
+    const bars=line.stripes.map(c=>`<i style="background:${c}"></i>`).join('');
+    const isNew=markLast && i===cars.length-1;
+    h+='<span class="ccpl"></span>'
+      +'<span class="ccar'+(isNew?' newcar':'')+'">'
+      +'<span class="ccar-body"><span class="ccar-win"></span><span class="ccar-stripe">'+bars+'</span></span>'
+      +'<b class="ccar-wheel" style="left:14%"></b><b class="ccar-wheel" style="right:14%"></b>'
+      +'</span>';
+  });
+  if(!cars.length) h+='<span class="cnone">（0りょう）</span>';
+  return h;
+}
+
+/* ---------- reward scene (big train passes, type-distinct shape) ---------- */
+function bigTrainHtml(line){
+  const wins='<span></span>'.repeat(3);
+  const stripes=line.stripes.map(c=>`<i style="background:${c}"></i>`).join('');
+  const mid=()=>`<div class="bt-car"><div class="bt-pan"></div>`
+    +`<div class="bt-body"><div class="bt-win">${wins}</div><div class="bt-stripe">${stripes}</div></div>`
+    +`<b class="bt-wheel" style="left:16%"></b><b class="bt-wheel" style="right:16%"></b></div>`;
+  const front=`<div class="bt-car bt-front">`
+    +`<div class="bt-body"><div class="bt-win">${wins}</div><div class="bt-stripe">${stripes}</div><div class="bt-head"></div></div>`
+    +`<b class="bt-wheel" style="left:16%"></b><b class="bt-wheel" style="right:30%"></b></div>`;
+  return mid()+'<b class="bt-coupler"></b>'+mid()+'<b class="bt-coupler"></b>'+front;
+}
+function renderReward(key, ch, isNew){
+  const cars=state.cars||[];
+  const lineIdx=(isNew && cars.length)?cars[cars.length-1]:Math.floor(Math.random()*JR_LINES.length);
+  const line=JR_LINES[lineIdx]||JR_LINES[0];
+  const kind=line.kind==='sk'?'sk':(line.kind==='ltd'?'ltd':'loc');
+  const em=line.kind==='sk'?'🚅':(line.kind==='ltd'?'🚄':'🚃');
+  const img=(typeof TRAINIMG!=='undefined')?TRAINIMG[line.name]:null;   // その路線の画像があれば使う
+  const trainHtml=img?`<img class="bt-img" src="${img}" alt="">`:bigTrainHtml(line);
+  const btCls=img?'bigtrain imgmode':'bigtrain kind-'+kind;
+  app.innerHTML=`
+  <div class="screen reward-screen">
+    ${clouds()}
+    <div class="reward-cap"><b style="background:${line.stripes[0]}"></b>${em} ${lineYomi(line)}</div>
+    <div class="${btCls}" id="bt">${trainHtml}</div>
+    <div class="reward-hint">タッチで つぎへ ▶</div>
+  </div>`;
+  confetti();
+  speak(lineYomi(line),'ja-JP');
+  let advanced=false, ready=false;
+  setTimeout(()=>{ ready=true; }, 500);
+  const go=()=>{ if(advanced)return; advanced=true; renderComplete(key,ch,isNew); };
+  const bt=$('#bt'); if(bt) bt.addEventListener('animationend',()=>setTimeout(go,250));
+  const sc=$('.reward-screen'); if(sc) sc.addEventListener('pointerdown',()=>{ if(ready) go(); });
+  setTimeout(go,5200); // safety auto-advance
+}
+
+/* ---------- complete ---------- */
+function renderComplete(key, ch, isNew){
+  const cat=catOf(key);
+  const idx=cat.chars.indexOf(ch);
+  const nextCh = idx+1<cat.chars.length ? cat.chars[idx+1] : null;
+  const cars=state.cars||[];
+  const newLine = (isNew && cars.length) ? JR_LINES[cars[cars.length-1]] : null;
+  const em = newLine ? (newLine.kind==='sk'?'🚅':(newLine.kind==='ltd'?'🚄':'🚃')) : '';
+  // カテゴリ達成バッジ（すうじ全部・ひらがな全部 など）
+  if(!state.badges) state.badges={};
+  const catDone = cat.chars.every(c=>state.done[dk(key,c)]);
+  const justBadge = catDone && !state.badges[key];
+  if(justBadge){ state.badges[key]=true; saveState(); }
+  const allDone = CATS.every(c=>c.chars.every(cc=>state.done[dk(c.key,cc)]));
+  const justGrand = allDone && !state.badges['__all__'];
+  if(justGrand){ state.badges['__all__']=true; saveState(); }
+  const badgeHtml = justGrand
+    ? `<div class="badge-won grand">🏆<div>ぜんぶ できた！<small>でんしゃ はかせ にんてい！</small></div></div>`
+    : justBadge
+    ? `<div class="badge-won">🏅<div>「${cat.label}」ぜんぶ できた！<small>メダル ゲット！</small></div></div>` : '';
+  app.innerHTML=`
+  <div class="screen complete">
+    ${clouds()}
+    <div class="big-emoji">🚂✨</div>
+    <h2>できたね！</h2>
+    <div class="gotc${cat.word?' word':''}">${ch}</div>
+    ${newLine
+      ? `<div class="newline">${em} ${lineYomi(newLine)} が れんけつ！<br><small>ぜんぶで ${cars.length} りょう</small></div>`
+      : `<div class="newline"><small>ぜんぶで ${cars.length} りょう</small></div>`}
+    ${badgeHtml}
+    <div class="ctrain" id="ctrain">${collectionTrainHtml(isNew)}</div>
+    <div class="footer-btns" style="margin-top:14px;">
+      ${nextCh!==null?'<button class="btn grass big" id="next">つぎ →</button>':'<button class="btn big" id="next">🎉 さいごまで できた！</button>'}
+      <button class="btn ghost" id="grid">えらぶ がめんへ</button>
+    </div>
+  </div>`;
+  confetti();
+  if(justBadge||justGrand){ chime('correct'); setTimeout(confetti,260); setTimeout(confetti,520); }
+  const ct=$('#ctrain'); if(ct) ct.scrollLeft=ct.scrollWidth;
+  $('#grid').onclick=()=>renderGrid(key);
+  $('#next').onclick=()=>{ if(nextCh!==null) renderTrace(key,nextCh); else renderGrid(key); };
+}
+
+/* ---------- boot ---------- */
+(function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+</script>
+</body>
+</html>

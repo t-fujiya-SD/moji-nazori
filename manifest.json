@@ -1,0 +1,15 @@
+{
+  "name": "采生くんの もじ・すうじ なぞり",
+  "short_name": "もじなぞり",
+  "start_url": "moji-nazori.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#aee4ff",
+  "theme_color": "#aee4ff",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
