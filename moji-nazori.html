@@ -1152,6 +1152,8 @@ function renderComplete(key, ch, isNew){
 
 /* ---------- boot ---------- */
 (function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
+/* 電車画像を先読み（初回のごほうびで「空欄のまま通過」しないように） */
+(function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; }); }catch(e){} })();
 if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
