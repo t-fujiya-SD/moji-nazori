@@ -828,6 +828,7 @@ function renderTrace(key, ch){
     <div class="canvas-wrap"><canvas id="cv"></canvas></div>
     <div class="footer-btns">
       <button class="btn ghost" id="order"></button>
+      <button class="btn ghost" id="pen"></button>
       ${canWatch?'<button class="btn ghost" id="watch">▶ みる</button>':''}
       <button class="btn ghost" id="clear">もういちど</button>
       <button class="btn grass done-btn" id="done">✓ できた</button>
@@ -839,41 +840,51 @@ function renderTrace(key, ch){
   function syncOrderBtn(){ orderBtn.textContent = ORDER_ON?'① 書き順 ✓':'① 書き順'; }
   syncOrderBtn();
   orderBtn.onclick=()=>{ if(playing)return; ORDER_ON=!ORDER_ON; state.orderOn=ORDER_ON; saveState(); syncOrderBtn(); redraw(); };
+  const penBtn=$('#pen');
+  function syncPenBtn(){ penBtn.textContent='✏ '+({thin:'ほそい',med:'ふつう',thick:'ふとい'}[state.pen||'med']); }
+  syncPenBtn();
+  penBtn.onclick=()=>{ if(playing)return; const od=['thin','med','thick']; state.pen=od[(od.indexOf(state.pen||'med')+1)%3]; saveState(); applyPen(); syncPenBtn(); redraw(); };
 
   const cv=$('#cv'), ctx=cv.getContext('2d');
   const dpr=Math.min(window.devicePixelRatio||1,2);
-  let side,fontSize,baseOff,S,R,cols,rows,target,covered,totalT,coveredN,strokes=[],drawing=false,done=false,penSeen=false,settleT=null,playing=false;
+  let side,cw,fontSize,baseOff,S,R,inkW,cols,rows,target,covered,totalT,coveredN,strokes=[],drawing=false,done=false,penSeen=false,settleT=null,playing=false;
   let kscale=1,koff=0,kpaths=null,kstarts=null;
   const useKvg=(key==='hira' && typeof HKVG!=='undefined' && !!HKVG[ch]);
   const FONT=()=>'bold '+fontSize+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
+  function penFactor(){ const p=state.pen||'med'; if(p==='thin')return{ink:0.04,r:0.055}; if(p==='thick')return{ink:0.085,r:0.10}; return{ink:0.058,r:0.075}; }
+  function applyPen(){ const f=penFactor(); inkW=side*f.ink; R=side*f.r; }
 
   function layout(){
     const wrap=cv.parentElement;
-    const avail=Math.min(wrap.clientWidth, wrap.clientHeight);
-    side=Math.max(240, avail-6);
-    cv.style.width=side+'px'; cv.style.height=side+'px';
-    cv.width=side*dpr; cv.height=side*dpr;
+    const availW=Math.max(240, wrap.clientWidth-6), availH=Math.max(240, wrap.clientHeight-6);
+    const FF=(s)=>'bold '+s+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
+    if(isWord && ch.length>1){
+      // 長い言葉：横に大きいキャンバスにして一文字を大きく（幼児が書ける広さ）
+      side=Math.min(availH, 640);
+      baseOff=side*0.04;
+      let fs=side*0.62;
+      const oc=document.createElement('canvas').getContext('2d');
+      oc.font=FF(fs); let w=oc.measureText(ch).width||1;
+      const pad=side*0.5;
+      if(w+pad<=availW){ cw=Math.max(side, w+pad); }
+      else { const maxW=Math.max(120, availW-pad); fs=Math.floor(fs*maxW/w); oc.font=FF(fs); w=oc.measureText(ch).width||1; cw=availW; }
+      fontSize=fs;
+    } else {
+      side=cw=Math.min(availW,availH);
+      if(!useKvg){ fontSize=side*0.72; baseOff=side*0.04; }
+    }
+    applyPen();
+    cv.style.width=cw+'px'; cv.style.height=side+'px';
+    cv.width=cw*dpr; cv.height=side*dpr;
     ctx.setTransform(dpr,0,0,dpr,0,0);
     S=Math.min(8, Math.max(4, Math.round(side/58)));
-    cols=Math.ceil(side/S); rows=Math.ceil(side/S);
+    cols=Math.ceil(cw/S); rows=Math.ceil(side/S);
     if(useKvg){
       const pad=side*0.09; kscale=(side-2*pad)/109; koff=(side-109*kscale)/2;
-      R=side*0.06;
       kpaths=HKVG[ch].map(d=>new Path2D(d));
       kstarts=HKVG[ch].map(d=>GEO.start(d));
       buildMaskKvg();
     } else {
-      baseOff=side*0.04;
-      if(isWord && ch.length>1){
-        const oc=document.createElement('canvas').getContext('2d');
-        let fs=side*0.6;
-        oc.font='bold '+fs+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
-        const maxW=side*0.88, w=oc.measureText(ch).width||1;
-        if(w>maxW) fs=Math.floor(fs*maxW/w);
-        fontSize=fs; R=side*0.052;
-      } else {
-        fontSize=side*0.72; R=side*0.075;
-      }
       buildMaskFont();
     }
     if(kvgD && !useKvg){   // カタカナ等: 判定はフォント、書き順バッジ/みるは KanjiVG を重ねる
@@ -884,16 +895,16 @@ function renderTrace(key, ch){
     redraw();
   }
   function buildMaskFont(){
-    const off=document.createElement('canvas'); off.width=side; off.height=side;
+    const off=document.createElement('canvas'); off.width=cw; off.height=side;
     const o=off.getContext('2d');
     o.fillStyle='#000'; o.textAlign='center'; o.textBaseline='middle'; o.font=FONT();
-    o.fillText(ch, side/2, side/2+baseOff);
-    const data=o.getImageData(0,0,side,side).data;
+    o.fillText(ch, cw/2, side/2+baseOff);
+    const data=o.getImageData(0,0,cw,side).data;
     target=new Uint8Array(cols*rows); totalT=0;
     for(let gy=0; gy<rows; gy++){
       for(let gx=0; gx<cols; gx++){
-        const x=Math.min(side-1, gx*S+(S>>1)), y=Math.min(side-1, gy*S+(S>>1));
-        if(data[(y*side+x)*4+3] > 100){ target[gy*cols+gx]=1; totalT++; }
+        const x=Math.min(cw-1, gx*S+(S>>1)), y=Math.min(side-1, gy*S+(S>>1));
+        if(data[(y*cw+x)*4+3] > 100){ target[gy*cols+gx]=1; totalT++; }
       }
     }
     if(totalT===0) totalT=1;
@@ -925,13 +936,13 @@ function renderTrace(key, ch){
       ctx.restore();
     } else {
       ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=FONT();
-      ctx.fillStyle='#dde6ee'; ctx.fillText(ch, side/2, side/2+baseOff);
-      ctx.lineWidth=2; ctx.strokeStyle='#b9c8d8'; ctx.strokeText(ch, side/2, side/2+baseOff);
+      ctx.fillStyle='#dde6ee'; ctx.fillText(ch, cw/2, side/2+baseOff);
+      ctx.lineWidth=2; ctx.strokeStyle='#b9c8d8'; ctx.strokeText(ch, cw/2, side/2+baseOff);
     }
   }
   function drawInk(){
-    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=side*0.05;
-    strokes.forEach(st=>{ if(st.length<2){ if(st.length===1){ ctx.beginPath(); ctx.arc(st[0].x,st[0].y,side*0.025,0,7); ctx.fillStyle='#ff7a59'; ctx.fill(); } return; } ctx.beginPath(); st.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); });
+    ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=inkW;
+    strokes.forEach(st=>{ if(st.length<2){ if(st.length===1){ ctx.beginPath(); ctx.arc(st[0].x,st[0].y,inkW*0.5,0,7); ctx.fillStyle='#ff7a59'; ctx.fill(); } return; } ctx.beginPath(); st.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); });
   }
   function drawOrder(force){
     if(!ORDER_ON && !force) return;
@@ -939,10 +950,10 @@ function renderTrace(key, ch){
     if(kvgD && kstarts){
       pts=kstarts.map(s=>({x:koff+s.x*kscale, y:koff+s.y*kscale, dx:s.dx, dy:s.dy}));
     } else if(typeof STROKEPATH!=='undefined' && STROKEPATH[ch]){
-      pts=STROKEPATH[ch].map(p=>{ const a=p[0], b=p[1]||p[0]; return {x:a[0]*side, y:a[1]*side, dx:b[0]-a[0], dy:b[1]-a[1]}; });
+      pts=STROKEPATH[ch].map(p=>{ const a=p[0], b=p[1]||p[0]; return {x:a[0]*cw, y:a[1]*side, dx:b[0]-a[0], dy:b[1]-a[1]}; });
     } else {
       const list=STROKES[ch]; if(!list) return;
-      pts=list.map(s=>({x:s[0]*side, y:s[1]*side, dx:s[2], dy:s[3]}));
+      pts=list.map(s=>({x:s[0]*cw, y:s[1]*side, dx:s[2], dy:s[3]}));
     }
     const placed=[], rC=side*0.046, minD=rC*1.85;
     pts.forEach((p,i)=>{
@@ -967,7 +978,7 @@ function renderTrace(key, ch){
   function redraw(){ ctx.clearRect(0,0,cv.width,cv.height); drawGuide(); drawInk(); drawOrder(); }
 
   // ---- 「みる」: 正しい書き順を一画ずつ書いて見せる ----
-  function densify(poly){ const out=[]; for(let i=0;i<poly.length-1;i++){ const a=poly[i],b=poly[i+1],seg=10; for(let s=0;s<seg;s++) out.push({x:(a[0]+(b[0]-a[0])*s/seg)*side, y:(a[1]+(b[1]-a[1])*s/seg)*side}); } const L=poly[poly.length-1]; out.push({x:L[0]*side,y:L[1]*side}); return out; }
+  function densify(poly){ const out=[]; for(let i=0;i<poly.length-1;i++){ const a=poly[i],b=poly[i+1],seg=10; for(let s=0;s<seg;s++) out.push({x:(a[0]+(b[0]-a[0])*s/seg)*cw, y:(a[1]+(b[1]-a[1])*s/seg)*side}); } const L=poly[poly.length-1]; out.push({x:L[0]*cw,y:L[1]*side}); return out; }
   function demoStrokes(){
     if(kvgD) return kvgD.map(d=> GEO.samples(d,3).map(p=>({x:koff+p.x*kscale, y:koff+p.y*kscale})) );
     if(typeof STROKEPATH!=='undefined' && STROKEPATH[ch]) return STROKEPATH[ch].map(poly=>densify(poly));
@@ -981,7 +992,7 @@ function renderTrace(key, ch){
     const drawPoly=pts=>{ if(pts.length<2)return; ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); };
     function frameDraw(active){
       ctx.clearRect(0,0,cv.width,cv.height); drawGuide();
-      ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=side*0.05;
+      ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#ff7a59'; ctx.lineWidth=inkW;
       drawn.forEach(drawPoly); if(active) drawPoly(active);
       drawOrder(true);
       if(active&&active.length){ const p=active[active.length-1]; ctx.beginPath(); ctx.arc(p.x,p.y,side*0.03,0,7); ctx.fillStyle='#ff2d6f'; ctx.fill(); ctx.lineWidth=Math.max(2,side*0.008); ctx.strokeStyle='#fff'; ctx.stroke(); }
@@ -1151,7 +1162,7 @@ function renderComplete(key, ch, isNew){
 }
 
 /* ---------- boot ---------- */
-(function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
+(function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(!state.pen) state.pen='med'; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
 /* 電車画像を先読み（初回のごほうびで「空欄のまま通過」しないように） */
 (function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; }); }catch(e){} })();
 if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
