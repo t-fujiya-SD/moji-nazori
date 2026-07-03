@@ -64,6 +64,10 @@
     font-family:inherit; font-weight:800; font-size:26px; color:#fff; box-shadow:0 6px 0 rgba(0,0,0,.18);
     display:flex; align-items:center; justify-content:space-between; transition:transform .07s, box-shadow .07s;}
   .catbtn:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  .catbtn.locked{opacity:.5; filter:grayscale(.5);}
+  .catbtn.locked small{font-weight:800; opacity:.95;}
+  .catbtn.shake{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
   .catbtn small{font-size:15px; font-weight:800; opacity:.92;}
   .catbtn .ex{font-size:30px;}
 
@@ -257,6 +261,10 @@ const CATS=[
 CATS.forEach(c=>{ if(c.items){ c.chars=c.items.map(i=>i[0]); c.pic={}; c.items.forEach(i=>{ if(i[1]) c.pic[i[0]]=i[1]; }); if(!c.say) c.say=x=>x; } });
 function catOf(k){ return CATS.find(c=>c.key===k); }
 function picOf(cat,ch){ return (cat&&cat.pic&&cat.pic[ch])||''; }
+/* アンロック: 基礎(すうじ/ひらがな/カタカナ/ABC)は常時。ことば(応用)は「あいうえお」全クリアで解放 */
+function hiraDoneCount(){ const h=catOf('hira'); return h.chars.filter(ch=>state.done&&state.done[dk('hira',ch)]).length; }
+function hiraRemaining(){ const h=catOf('hira'); return h.chars.length - hiraDoneCount(); }
+function catUnlocked(key){ const c=catOf(key); if(!c||!c.word) return true; return hiraRemaining()===0; }
 
 /* 書き順データ: char -> [[x,y,dx,dy], ...]  x,y=画の始点(キャンバス0..1), dx,dy=最初に進む向き */
 const STROKES={
@@ -609,6 +617,12 @@ function renderVoicePicker(){
 function renderCats(){
   const btns=CATS.map(c=>{
     const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
+    if(!catUnlocked(c.key)){
+      return `<button class="catbtn locked" data-k="${c.key}" style="background:${c.color}">
+        <span>🔒 ${c.label}<br><small>あいうえおを あと ${hiraRemaining()}もじで つかえるよ</small></span>
+        <span class="ex">🔒</span>
+      </button>`;
+    }
     return `<button class="catbtn" data-k="${c.key}" style="background:${c.color}">
       <span>${c.label} <small>(${done}/${total})</small></span>
       <span class="ex">${c.ex}</span>
@@ -626,7 +640,10 @@ function renderCats(){
   </div>`;
   $('#home').onclick=renderTitle;
   $('#voice2').onclick=()=>{ ensureAudio(); renderVoicePicker(); };
-  app.querySelectorAll('.catbtn').forEach(b=>b.onclick=()=>renderGrid(b.dataset.k));
+  app.querySelectorAll('.catbtn').forEach(b=>b.onclick=()=>{
+    if(b.classList.contains('locked')){ b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); try{speak('あいうえおを クリアしてね','ja-JP');}catch(e){} return; }
+    renderGrid(b.dataset.k);
+  });
 }
 
 /* ---------- char grid ---------- */
@@ -1138,6 +1155,11 @@ function renderComplete(key, ch, isNew){
     ? `<div class="badge-won grand">🏆<div>ぜんぶ できた！<small>でんしゃ はかせ にんてい！</small></div></div>`
     : justBadge
     ? `<div class="badge-won">🏅<div>「${cat.label}」ぜんぶ できた！<small>メダル ゲット！</small></div></div>` : '';
+  // あいうえお 全クリア → のりもの・こんちゅう 等 解放
+  const justUnlock = key==='hira' && hiraRemaining()===0 && !state.unlockAnnounced;
+  if(justUnlock){ state.unlockAnnounced=true; saveState(); }
+  const unlockHtml = justUnlock
+    ? `<div class="badge-won grand">🎉<div>のりもの・こんちゅう が つかえる！<small>あたらしい なぞりが ふえたよ</small></div></div>` : '';
   app.innerHTML=`
   <div class="screen complete">
     ${clouds()}
@@ -1147,7 +1169,7 @@ function renderComplete(key, ch, isNew){
     ${newLine
       ? `<div class="newline">${em} ${lineYomi(newLine)} が れんけつ！<br><small>ぜんぶで ${cars.length} りょう</small></div>`
       : `<div class="newline"><small>ぜんぶで ${cars.length} りょう</small></div>`}
-    ${badgeHtml}
+    ${unlockHtml}${badgeHtml}
     <div class="ctrain" id="ctrain">${collectionTrainHtml(isNew)}</div>
     <div class="footer-btns" style="margin-top:14px;">
       ${nextCh!==null?'<button class="btn grass big" id="next">つぎ →</button>':'<button class="btn big" id="next">🎉 さいごまで できた！</button>'}
@@ -1155,7 +1177,8 @@ function renderComplete(key, ch, isNew){
     </div>
   </div>`;
   confetti();
-  if(justBadge||justGrand){ chime('correct'); setTimeout(confetti,260); setTimeout(confetti,520); }
+  if(justBadge||justGrand||justUnlock){ chime('correct'); setTimeout(confetti,260); setTimeout(confetti,520); }
+  if(justUnlock){ setTimeout(()=>{ try{speak('のりもの と こんちゅう が つかえるよ','ja-JP');}catch(e){} }, 400); }
   const ct=$('#ctrain'); if(ct) ct.scrollLeft=ct.scrollWidth;
   $('#grid').onclick=()=>renderGrid(key);
   $('#next').onclick=()=>{ if(nextCh!==null) renderTrace(key,nextCh); else renderGrid(key); };
