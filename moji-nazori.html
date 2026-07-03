@@ -104,6 +104,10 @@
   .cc.word{aspect-ratio:auto; flex-direction:column; gap:2px; padding:12px 6px;}
   .cc.word .cc-emo{font-size:36px; line-height:1;}
   .cc.word .cc-word{font-size:17px; font-weight:800; color:var(--ink);}
+  .cgrid.traingrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); max-width:680px;}
+  .cc.train{aspect-ratio:auto; flex-direction:column; gap:2px; padding:8px 6px;}
+  .cc.train .cc-train{width:100%; height:auto; max-height:78px; object-fit:contain;}
+  .cc.train .cc-word{font-size:14px; font-weight:800; color:var(--ink);}
   .trace-label .hint-emo{font-size:30px; vertical-align:middle;}
   .bigc.word{font-size:26px;}
   .complete .gotc.word{font-size:34px;}
@@ -145,6 +149,14 @@
   .ptrack{position:relative; height:16px; background:#e7eef6; border-radius:10px;}
   .pfill{height:100%; border-radius:10px; transition:width .4s;}
   .ploco{position:absolute; top:50%; transform:translate(-50%,-58%); font-size:18px; line-height:1;}
+  .tcoll-title{text-align:center; font-size:16px; font-weight:800; color:var(--ink); margin:16px 0 8px;}
+  .tcoll-title b{color:var(--coral);}
+  .tcoll{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; max-width:560px; margin:0 auto;}
+  .tcell{background:#fff; border-radius:12px; box-shadow:0 3px 0 var(--line); padding:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:74px;}
+  .tcell img{width:100%; height:auto; max-height:52px; object-fit:contain;}
+  .tcell .tname{font-size:11px; font-weight:800; color:var(--ink-soft); margin-top:2px; text-align:center; line-height:1.1;}
+  .tcell:not(.got){background:#e7eef6;}
+  .tcell .tq{font-size:26px; color:#b9c8d8; font-weight:800;}
   .confetti{position:fixed; top:-20px; width:12px; height:18px; border-radius:3px; z-index:50; pointer-events:none;}
   @keyframes fall{to{transform:translateY(110vh) rotate(540deg); opacity:.9;}}
 
@@ -267,7 +279,8 @@ function picOf(cat,ch){ return (cat&&cat.pic&&cat.pic[ch])||''; }
 /* アンロック: 基礎(すうじ/ひらがな/カタカナ/ABC)は常時。ことば(応用)は「あいうえお」全クリアで解放 */
 function hiraDoneCount(){ const h=catOf('hira'); return h.chars.filter(ch=>state.done&&state.done[dk('hira',ch)]).length; }
 function hiraRemaining(){ const h=catOf('hira'); return h.chars.length - hiraDoneCount(); }
-function catUnlocked(key){ const c=catOf(key); if(!c||!c.word) return true; return hiraRemaining()===0; }
+function vehicleDone(){ const v=catOf('vehicle'); return v && v.chars.every(ch=>state.done&&state.done[dk('vehicle',ch)]); }
+function catUnlocked(key){ const c=catOf(key); if(!c) return true; if(key==='train') return vehicleDone(); if(!c.word) return true; return hiraRemaining()===0; }
 
 /* 書き順データ: char -> [[x,y,dx,dy], ...]  x,y=画の始点(キャンバス0..1), dx,dy=最初に進む向き */
 const STROKES={
@@ -486,6 +499,12 @@ const TRAINIMG={
   '湘南新宿ライン':'img/shonan-shinjuku.png',
   '上野東京ライン':'img/ueno-tokyo.png'
 };
+/* でんしゃ カテゴリ: 画像のある路線名(よみ)をなぞる → その顔つき電車をコレクション */
+const TRAIN_LINES=JR_LINES.filter(l=>TRAINIMG[l.name]);
+const TRAIN_BY_YOMI={}; TRAIN_LINES.forEach(l=>{ TRAIN_BY_YOMI[l.yomi]=l; });
+CATS.push({ key:'train', label:'でんしゃ', ex:'🚃', color:'#4a7fe0', lang:'ja-JP', word:true, train:true,
+  chars:TRAIN_LINES.map(l=>l.yomi), say:c=>c,
+  img:(function(){ const m={}; TRAIN_LINES.forEach(l=>{ m[l.yomi]=TRAINIMG[l.name]; }); return m; })() });
 function passingTrain(delay, showCaption){
   delay=delay||0;
   const line=JR_LINES[Math.floor(Math.random()*JR_LINES.length)];
@@ -556,6 +575,10 @@ function renderProgress(){
   const totalDone=CATS.reduce((s,c)=>s+c.chars.filter(ch=>state.done[dk(c.key,ch)]).length,0);
   const badgeCount=CATS.filter(c=>state.badges[c.key]).length;
   const grand=!!state.badges['__all__'];
+  const trains=(typeof TRAIN_LINES!=='undefined')?TRAIN_LINES:[];
+  const trainGot=trains.filter(l=>state.trains&&state.trains[l.name]).length;
+  const trainCol=trains.map(l=>{ const got=state.trains&&state.trains[l.name];
+    return `<div class="tcell ${got?'got':''}">${got?`<img src="${TRAINIMG[l.name]}" alt=""><span class="tname">${l.yomi}</span>`:'<span class="tq">？</span>'}</div>`; }).join('');
   app.innerHTML=`
   <div class="screen">
     <div class="gridhead"><button class="back" id="back">‹ もどる</button><div class="count">がんばりひょう 🏅</div></div>
@@ -563,6 +586,8 @@ function renderProgress(){
     <div class="scroll">
       <div class="psum">おぼえた もじ <b>${totalDone}</b>　メダル <b>${badgeCount}/${CATS.length}</b>${grand?'　🏆':''}</div>
       ${rows}
+      <div class="tcoll-title">でんしゃコレクション 🚃 <b>${trainGot}/${trains.length}</b></div>
+      <div class="tcoll">${trainCol}</div>
       <p class="hint" style="margin-top:10px;">がんばりは じどうで ほぞんされるよ 💾</p>
     </div>
   </div>`;
@@ -621,8 +646,9 @@ function renderCats(){
   const btns=CATS.map(c=>{
     const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
     if(!catUnlocked(c.key)){
+      const hint = c.key==='train' ? 'のりものを ぜんぶ クリアで つかえるよ' : `あいうえおを あと ${hiraRemaining()}もじで つかえるよ`;
       return `<button class="catbtn locked" data-k="${c.key}" style="background:${c.color}">
-        <span>🔒 ${c.label}<br><small>あいうえおを あと ${hiraRemaining()}もじで つかえるよ</small></span>
+        <span>🔒 ${c.label}<br><small>${hint}</small></span>
         <span class="ex">🔒</span>
       </button>`;
     }
@@ -655,6 +681,9 @@ function renderGrid(key){
   const doneChars=cat.chars.filter(ch=>state.done[dk(key,ch)]);
   const cells=cat.chars.map(ch=>{
     const d=state.done[dk(key,ch)];
+    if(cat.train){
+      return `<div class="cc train ${d?'done':''}" data-c="${ch}"><img class="cc-train" src="${cat.img[ch]}" alt=""><span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
+    }
     if(cat.word){
       const pic=picOf(cat,ch);
       return `<div class="cc word ${d?'done':''}" data-c="${ch}">${pic?`<span class="cc-emo">${pic}</span>`:''}<span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
@@ -668,7 +697,7 @@ function renderGrid(key){
       <div class="count">${doneChars.length} / ${cat.chars.length}</div>
     </div>
     <div class="ctrain">${collectionTrainHtml(false)}</div>
-    <div class="scroll"><div class="cgrid${cat.word?' wordgrid':''}">${cells}</div></div>
+    <div class="scroll"><div class="cgrid${cat.train?' traingrid':(cat.word?' wordgrid':'')}">${cells}</div></div>
   </div>`;
   $('#back').onclick=renderCats;
   app.querySelectorAll('.cc').forEach(el=>el.onclick=()=>renderTrace(key, el.dataset.c));
@@ -1102,7 +1131,9 @@ function renderTrace(key, ch){
     chime('correct'); speak(cat.say(ch), cat.lang);
     const firstTime=!state.done[dk(key,ch)];
     state.done[dk(key,ch)]=true;
-    if(firstTime){ if(!Array.isArray(state.cars)) state.cars=[]; state.cars.push(Math.floor(Math.random()*JR_LINES.length)); }
+    if(firstTime){ if(!Array.isArray(state.cars)) state.cars=[];
+      let ci=(key==='train' && typeof TRAIN_BY_YOMI!=='undefined' && TRAIN_BY_YOMI[ch]) ? JR_LINES.indexOf(TRAIN_BY_YOMI[ch]) : Math.floor(Math.random()*JR_LINES.length);
+      state.cars.push(ci<0?0:ci); }
     saveState();
     setTimeout(()=>renderReward(key,ch,firstTime),650);
   }
@@ -1142,11 +1173,13 @@ function bigTrainHtml(line){
 }
 function renderReward(key, ch, isNew){
   const cars=state.cars||[];
-  const lineIdx=(isNew && cars.length)?cars[cars.length-1]:Math.floor(Math.random()*JR_LINES.length);
-  const line=JR_LINES[lineIdx]||JR_LINES[0];
+  let line;
+  if(key==='train' && typeof TRAIN_BY_YOMI!=='undefined' && TRAIN_BY_YOMI[ch]){ line=TRAIN_BY_YOMI[ch]; }   // でんしゃ=なぞった路線
+  else { const lineIdx=(isNew && cars.length)?cars[cars.length-1]:Math.floor(Math.random()*JR_LINES.length); line=JR_LINES[lineIdx]||JR_LINES[0]; }
   const kind=line.kind==='sk'?'sk':(line.kind==='ltd'?'ltd':'loc');
   const em=line.kind==='sk'?'🚅':(line.kind==='ltd'?'🚄':'🚃');
   const img=(typeof TRAINIMG!=='undefined')?TRAINIMG[line.name]:null;   // その路線の画像があれば使う
+  if(img){ if(!state.trains) state.trains={}; if(!state.trains[line.name]){ state.trains[line.name]=true; saveState(); } }   // 顔つき電車をコレクション
   const trainHtml=img?`<img class="bt-img" src="${img}" alt="">`:bigTrainHtml(line);
   const btCls=img?'bigtrain imgmode':'bigtrain kind-'+kind;
   app.innerHTML=`
@@ -1216,7 +1249,7 @@ function renderComplete(key, ch, isNew){
 }
 
 /* ---------- boot ---------- */
-(function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(!state.pen) state.pen='med'; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
+(function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(!state.trains) state.trains={}; if(!state.pen) state.pen='med'; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
 /* 電車画像を先読み（初回のごほうびで「空欄のまま通過」しないように） */
 (function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; }); }catch(e){} })();
 if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
