@@ -213,7 +213,7 @@
     will-change:transform; transform:translateX(-135vw); animation:bt-cross 3.8s linear forwards;}
   @keyframes bt-cross{from{transform:translateX(-135vw)} to{transform:translateX(135vw)}}
   .bigtrain.imgmode{top:34%; align-items:center;}
-  .bt-img{width:78vw; max-width:380px; aspect-ratio:4 / 3; height:auto; object-fit:contain; display:block; filter:drop-shadow(0 6px 4px rgba(40,60,90,.2));}
+  .bt-img{width:78vw; max-width:360px; height:auto; display:block;}
   .bt-car{position:relative; width:150px; height:92px; flex:0 0 auto; filter:drop-shadow(0 5px 3px rgba(40,60,90,.22));}
   .bt-body{position:absolute; left:0; right:0; top:16px; bottom:16px; background:linear-gradient(#ffffff,#dae4ee);
     border:2.5px solid #c2ceda; border-radius:12px 12px 8px 8px; overflow:hidden;}
@@ -1196,7 +1196,22 @@ function renderReward(key, ch, isNew){
   const go=()=>{ if(advanced)return; advanced=true; renderComplete(key,ch,isNew); };
   const bt=$('#bt'); if(bt) bt.addEventListener('animationend',()=>setTimeout(go,250));
   const sc=$('.reward-screen'); if(sc) sc.addEventListener('pointerdown',()=>{ if(ready) go(); });
-  setTimeout(go,5200); // safety auto-advance
+  // 画像トレイン：読み込めるまで走らせない＋失敗したら必ずCSSの電車にフォールバック（空欄にしない）
+  if(img && bt){
+    let started=false;
+    const startAnim=()=>{ if(started)return; started=true; bt.style.animationPlayState='running'; };
+    const toCss=()=>{ if(!document.body.contains(bt))return; bt.className='bigtrain kind-'+kind; bt.innerHTML=bigTrainHtml(line); startAnim(); };
+    bt.style.animationPlayState='paused';
+    const imgEl=bt.querySelector('img');
+    if(imgEl){
+      imgEl.addEventListener('error', toCss, {once:true});
+      imgEl.addEventListener('load', startAnim, {once:true});
+      if(imgEl.complete){ if(imgEl.naturalWidth>0) startAnim(); else toCss(); }
+      try{ if(imgEl.decode) imgEl.decode().then(startAnim).catch(()=>{}); }catch(e){}
+    }
+    setTimeout(startAnim, 1600);   // 読み込みが遅くても必ず動かす
+  }
+  setTimeout(go,7000); // safety auto-advance
 }
 
 /* ---------- complete ---------- */
@@ -1251,7 +1266,9 @@ function renderComplete(key, ch, isNew){
 /* ---------- boot ---------- */
 (function(){ loadState(); ORDER_ON = state.orderOn!==false; if(!Array.isArray(state.cars)) state.cars=[]; if(!state.badges) state.badges={}; if(!state.trains) state.trains={}; if(!state.pen) state.pen='med'; if(state.voice===undefined && VVS && VVS[ZUNDA]) state.voice=ZUNDA; renderTitle(); })();
 /* 電車画像を先読み（初回のごほうびで「空欄のまま通過」しないように） */
-(function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; }); }catch(e){} })();
+/* 電車画像を先読み。参照を保持しないと iOS で読み込み前にGCされることがあるので配列で保持 */
+window.__trainPreload=[];
+(function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; window.__trainPreload.push(im); }); }catch(e){} })();
 if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
 </body>
