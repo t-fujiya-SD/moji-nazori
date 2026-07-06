@@ -1196,20 +1196,24 @@ function renderReward(key, ch, isNew){
   const go=()=>{ if(advanced)return; advanced=true; renderComplete(key,ch,isNew); };
   const bt=$('#bt'); if(bt) bt.addEventListener('animationend',()=>setTimeout(go,250));
   const sc=$('.reward-screen'); if(sc) sc.addEventListener('pointerdown',()=>{ if(ready) go(); });
-  // 画像トレイン：読み込めるまで走らせない＋失敗したら必ずCSSの電車にフォールバック（空欄にしない）
+  // 画像トレイン：デコード成功＆描画確定まで走らせない／失敗は必ずCSSの電車に切替(空欄にしない)／壊れキャッシュは自己修復
   if(img && bt){
-    let started=false;
-    const startAnim=()=>{ if(started)return; started=true; bt.style.animationPlayState='running'; };
-    const toCss=()=>{ if(!document.body.contains(bt))return; bt.className='bigtrain kind-'+kind; bt.innerHTML=bigTrainHtml(line); startAnim(); };
+    let started=false, swapped=false;
+    const startAnim=()=>{ if(started||swapped)return; started=true; bt.style.animationPlayState='running'; };
+    const paintThenStart=()=>{ requestAnimationFrame(()=>requestAnimationFrame(startAnim)); };  // 実描画を1フレーム待ってから動かす
+    const toCss=()=>{ if(swapped||!document.body.contains(bt))return; swapped=true; started=true;
+      bt.className='bigtrain kind-'+kind; bt.innerHTML=bigTrainHtml(line);
+      bt.style.animation='none'; void bt.offsetWidth; bt.style.animation=''; bt.style.animationPlayState='running';  // 左端から走り直す
+      try{ if(window.caches) caches.keys().then(ks=>ks.forEach(k=>caches.open(k).then(c=>c.delete(img)))); fetch(img,{cache:'reload'}).catch(()=>{}); }catch(e){}  // 壊れたキャッシュを捨てて取り直し
+    };
     bt.style.animationPlayState='paused';
     const imgEl=bt.querySelector('img');
     if(imgEl){
       imgEl.addEventListener('error', toCss, {once:true});
-      imgEl.addEventListener('load', startAnim, {once:true});
-      if(imgEl.complete){ if(imgEl.naturalWidth>0) startAnim(); else toCss(); }
-      try{ if(imgEl.decode) imgEl.decode().then(startAnim).catch(()=>{}); }catch(e){}
+      if(imgEl.decode){ imgEl.decode().then(paintThenStart).catch(toCss); }   // iOSの唯一確実な合図＝decode
+      else { imgEl.addEventListener('load', paintThenStart, {once:true}); if(imgEl.complete && imgEl.naturalWidth>0) paintThenStart(); }
     }
-    setTimeout(startAnim, 1600);   // 読み込みが遅くても必ず動かす
+    setTimeout(()=>{ if(started||swapped)return; const el=bt.querySelector('img'); if(el && el.naturalWidth>0) startAnim(); else toCss(); }, 1800);  // 遅すぎたら中身を見て：読めてれば直接走らせる／ダメならCSS電車
   }
   setTimeout(go,7000); // safety auto-advance
 }
@@ -1269,7 +1273,10 @@ function renderComplete(key, ch, isNew){
 /* 電車画像を先読み。参照を保持しないと iOS で読み込み前にGCされることがあるので配列で保持 */
 window.__trainPreload=[];
 (function preloadTrainImgs(){ try{ Object.keys(TRAINIMG).forEach(function(k){ var im=new Image(); im.src=TRAINIMG[k]; window.__trainPreload.push(im); }); }catch(e){} })();
-if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('controllerchange', function(){ if(window.__swReloaded)return; window.__swReloaded=true; location.reload(); });  // 新SWが有効化されたら1回だけ再読込（古い版のまま残るのを防ぐ）
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').then(function(reg){ try{reg.update();}catch(e){} }).catch(function(){}); });
+}
 </script>
 </body>
 </html>

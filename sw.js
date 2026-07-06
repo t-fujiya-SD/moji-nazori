@@ -1,4 +1,4 @@
-const CACHE = 'moji-nazori-v5';
+const CACHE = 'moji-nazori-v6';
 const CORE = ['moji-nazori.html', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 
 self.addEventListener('install', function (e) {
@@ -39,17 +39,17 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // 音声・画像など静的アセットはキャッシュ優先（速い・オフライン可）
+  // 音声・画像など静的アセット: stale-while-revalidate（キャッシュ即返し＋裏で更新＝壊れても次回に自己修復）
   e.respondWith(
     caches.match(req).then(function (hit) {
-      if (hit) return hit;
-      return fetch(req).then(function (res) {
-        if (res && res.status === 200 && res.type === 'basic') {
+      var net = fetch(req).then(function (res) {
+        if (res && res.ok && res.status === 200 && res.type === 'basic') {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put(req, copy); });
         }
         return res;
-      });
+      }).catch(function () { return hit; });
+      return hit || net;
     })
   );
 });
