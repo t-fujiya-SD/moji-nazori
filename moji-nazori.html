@@ -436,6 +436,7 @@ const JR_LINES=[
   {name:'横浜線',     yomi:'よこはません',         stripes:['#8fc31f','#006934']},
   {name:'常磐線',     yomi:'じょうばんせん',       stripes:['#0072bc']},
   {name:'京葉線',     yomi:'けいようせん',         stripes:['#c30e2e']},
+  {name:'りんかい線', yomi:'りんかいせん',         stripes:['#00418e','#00a7db']},
   {name:'中央線',     yomi:'ちゅうおうせん',       stripes:['#f15a22']},
   {name:'総武線',     yomi:'そうぶせん',           stripes:['#ffd400']},
   {name:'武蔵野線',   yomi:'むさしのせん',         stripes:['#ed6d00']},
@@ -497,7 +498,9 @@ const TRAINIMG={
   '宇都宮線':'img/utsunomiya.png',
   '高崎線':'img/takasaki.png',
   '湘南新宿ライン':'img/shonan-shinjuku.png',
-  '上野東京ライン':'img/ueno-tokyo.png'
+  '上野東京ライン':'img/ueno-tokyo.png',
+  'りんかい線':'img/rinkai.png',
+  '銀座線':'img/ginza.png'
 };
 /* でんしゃ カテゴリ: 画像のある路線名(よみ)をなぞる → その顔つき電車をコレクション */
 const TRAIN_LINES=JR_LINES.filter(l=>TRAINIMG[l.name]);
@@ -505,6 +508,14 @@ const TRAIN_BY_YOMI={}; TRAIN_LINES.forEach(l=>{ TRAIN_BY_YOMI[l.yomi]=l; });
 CATS.push({ key:'train', label:'でんしゃ', ex:'🚃', color:'#4a7fe0', lang:'ja-JP', word:true, train:true,
   chars:TRAIN_LINES.map(l=>l.yomi), say:c=>c,
   img:(function(){ const m={}; TRAIN_LINES.forEach(l=>{ m[l.yomi]=TRAINIMG[l.name]; }); return m; })() });
+/* ごほうびの顔つき電車: 最初3本 → カテゴリ制覇(メダル)ごとに+3本 解放。解放済みを順番に循環（かぶらない） */
+function medalCount(){ return CATS.filter(c=>state.badges&&state.badges[c.key]).length; }
+function unlockedTrains(){ const n=Math.min(TRAIN_LINES.length, 3+3*medalCount()); return TRAIN_LINES.slice(0,n); }
+function nextRewardLine(){
+  const pool=unlockedTrains(); if(!pool.length) return TRAIN_LINES[0]||JR_LINES[0];
+  const i=(state.trainRot||0)%pool.length; state.trainRot=((state.trainRot||0)+1)%100000; saveState();
+  return pool[i];
+}
 function passingTrain(delay, showCaption){
   delay=delay||0;
   const line=JR_LINES[Math.floor(Math.random()*JR_LINES.length)];
@@ -1132,7 +1143,7 @@ function renderTrace(key, ch){
     const firstTime=!state.done[dk(key,ch)];
     state.done[dk(key,ch)]=true;
     if(firstTime){ if(!Array.isArray(state.cars)) state.cars=[];
-      let ci=(key==='train' && typeof TRAIN_BY_YOMI!=='undefined' && TRAIN_BY_YOMI[ch]) ? JR_LINES.indexOf(TRAIN_BY_YOMI[ch]) : Math.floor(Math.random()*JR_LINES.length);
+      let ci=(key==='train' && typeof TRAIN_BY_YOMI!=='undefined' && TRAIN_BY_YOMI[ch]) ? JR_LINES.indexOf(TRAIN_BY_YOMI[ch]) : JR_LINES.indexOf(nextRewardLine());
       state.cars.push(ci<0?0:ci); }
     saveState();
     setTimeout(()=>renderReward(key,ch,firstTime),650);
@@ -1175,7 +1186,8 @@ function renderReward(key, ch, isNew){
   const cars=state.cars||[];
   let line;
   if(key==='train' && typeof TRAIN_BY_YOMI!=='undefined' && TRAIN_BY_YOMI[ch]){ line=TRAIN_BY_YOMI[ch]; }   // でんしゃ=なぞった路線
-  else { const lineIdx=(isNew && cars.length)?cars[cars.length-1]:Math.floor(Math.random()*JR_LINES.length); line=JR_LINES[lineIdx]||JR_LINES[0]; }
+  else if(isNew && cars.length){ line=JR_LINES[cars[cars.length-1]]||JR_LINES[0]; }   // 初クリア=連結した顔つき電車
+  else { line=nextRewardLine(); }   // 再クリアも顔つき電車を循環
   const kind=line.kind==='sk'?'sk':(line.kind==='ltd'?'ltd':'loc');
   const em=line.kind==='sk'?'🚅':(line.kind==='ltd'?'🚄':'🚃');
   const img=(typeof TRAINIMG!=='undefined')?TRAINIMG[line.name]:null;   // その路線の画像があれば使う
@@ -1238,6 +1250,16 @@ function renderComplete(key, ch, isNew){
     ? `<div class="badge-won grand">🏆<div>ぜんぶ できた！<small>でんしゃ はかせ にんてい！</small></div></div>`
     : justBadge
     ? `<div class="badge-won">🏅<div>「${cat.label}」ぜんぶ できた！<small>メダル ゲット！</small></div></div>` : '';
+  // メダル獲得 → あたらしい顔つき電車を解放（+3本）
+  let trainUnlockHtml='';
+  if(justBadge||justGrand){
+    const prevCount=Math.min(TRAIN_LINES.length, 3+3*(medalCount()-1));
+    const gained=unlockedTrains().slice(prevCount);
+    if(gained.length){
+      const pics=gained.map(l=>`<img src="${TRAINIMG[l.name]}" style="height:38px; width:auto;" alt="">`).join('');
+      trainUnlockHtml=`<div class="badge-won">🚃<div>あたらしい でんしゃ が ${gained.length}ほん なかまいり！<br>${pics}</div></div>`;
+    }
+  }
   // あいうえお 全クリア → のりもの・こんちゅう 等 解放
   const justUnlock = key==='hira' && hiraRemaining()===0 && !state.unlockAnnounced;
   if(justUnlock){ state.unlockAnnounced=true; saveState(); }
@@ -1252,7 +1274,7 @@ function renderComplete(key, ch, isNew){
     ${newLine
       ? `<div class="newline">${em} ${lineYomi(newLine)} が れんけつ！<br><small>ぜんぶで ${cars.length} りょう</small></div>`
       : `<div class="newline"><small>ぜんぶで ${cars.length} りょう</small></div>`}
-    ${unlockHtml}${badgeHtml}
+    ${unlockHtml}${badgeHtml}${trainUnlockHtml}
     <div class="ctrain" id="ctrain">${collectionTrainHtml(isNew)}</div>
     <div class="footer-btns" style="margin-top:14px;">
       ${nextCh!==null?'<button class="btn grass big" id="next">つぎ →</button>':'<button class="btn big" id="next">🎉 さいごまで できた！</button>'}
