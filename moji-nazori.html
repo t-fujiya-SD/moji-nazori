@@ -516,9 +516,11 @@ const TRAIN_BY_YOMI={}; TRAIN_LINES.forEach(l=>{ TRAIN_BY_YOMI[l.yomi]=l; });
 CATS.push({ key:'train', label:'でんしゃ', ex:'🚃', color:'#4a7fe0', lang:'ja-JP', word:true, train:true,
   chars:TRAIN_LINES.map(l=>l.yomi), say:c=>c,
   img:(function(){ const m={}; TRAIN_LINES.forEach(l=>{ m[l.yomi]=TRAINIMG[l.name]; }); return m; })() });
-/* ごほうびの顔つき電車: 最初3本 → 5こクリアするごとに+1本 解放（あいうえお→1本、かきくけこ→1本…）。解放済みを順番に循環（かぶらない） */
-function totalDoneCount(){ return state.done?Object.keys(state.done).length:0; }
-function unlockedTrains(){ const n=Math.min(TRAIN_LINES.length, 3+Math.floor(totalDoneCount()/5)); return TRAIN_LINES.slice(0,n); }
+/* ごほうびの顔つき電車: 最初3本 → 各カテゴリで5こクリアするごとに+1本 解放
+   （あいうえお→1本、かきくけこ→1本、アイウエオ→1本、カキクケコ→1本…）。解放済みを順番に循環（かぶらない） */
+function catDoneCount(key){ const c=catOf(key); return c?c.chars.filter(ch=>state.done&&state.done[dk(key,ch)]).length:0; }
+function unlockCountRaw(){ let n=3; CATS.forEach(c=>{ n+=Math.floor(catDoneCount(c.key)/5); }); return n; }
+function unlockedTrains(){ return TRAIN_LINES.slice(0, Math.min(TRAIN_LINES.length, unlockCountRaw())); }
 function nextRewardLine(){
   const pool=unlockedTrains(); if(!pool.length) return TRAIN_LINES[0]||JR_LINES[0];
   const i=(state.trainRot||0)%pool.length; state.trainRot=((state.trainRot||0)+1)%100000; saveState();
@@ -1296,12 +1298,14 @@ function renderComplete(key, ch, isNew){
     ? `<div class="badge-won grand">🏆<div>ぜんぶ できた！<small>でんしゃ はかせ にんてい！</small></div></div>`
     : justBadge
     ? `<div class="badge-won">🏅<div>「${cat.label}」ぜんぶ できた！<small>メダル ゲット！</small></div></div>` : '';
-  // 5こクリアするごとに あたらしい顔つき電車が1本なかまいり（あいうえお→1本、かきくけこ→1本…）
+  // カテゴリ内で5こクリアするごとに あたらしい顔つき電車が1本なかまいり（あいうえお→1本、アイウエオ→1本…）
   let trainUnlockHtml='';
   if(isNew){
-    const total=totalDoneCount();
-    const prevN=Math.min(TRAIN_LINES.length, 3+Math.floor(Math.max(0,total-1)/5));
-    const nowN=Math.min(TRAIN_LINES.length, 3+Math.floor(total/5));
+    const dc=catDoneCount(key);
+    const crossed=Math.floor(dc/5)>Math.floor(Math.max(0,dc-1)/5);
+    const raw=unlockCountRaw();
+    const nowN=Math.min(TRAIN_LINES.length, raw);
+    const prevN=Math.min(TRAIN_LINES.length, raw-(crossed?1:0));
     const gained=TRAIN_LINES.slice(prevN,nowN);
     if(gained.length){
       const pics=gained.map(l=>`<img src="${TRAINIMG[l.name]}" style="height:38px; width:auto;" alt="">`).join('');
