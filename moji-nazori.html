@@ -108,6 +108,11 @@
   .cc.train{aspect-ratio:auto; flex-direction:column; gap:2px; padding:8px 6px;}
   .cc.train .cc-train{width:100%; height:auto; max-height:78px; object-fit:contain;}
   .cc.train .cc-word{font-size:14px; font-weight:800; color:var(--ink);}
+  .cc.locked{opacity:.6; filter:grayscale(.85); background:#eef2f7; border-color:#dbe3ec; cursor:default;}
+  .cc.train.locked{min-height:96px;}
+  .cc.train.locked .cc-lock{font-size:40px; line-height:1;}
+  .cc.train.locked .cc-word{opacity:.75; letter-spacing:2px;}
+  .cc.shake{animation:shake .4s;}
   .trace-label .hint-emo{font-size:30px; vertical-align:middle;}
   .bigc.word{font-size:26px;}
   .complete .gotc.word{font-size:34px;}
@@ -288,7 +293,7 @@ function picOf(cat,ch){ return (cat&&cat.pic&&cat.pic[ch])||''; }
 function hiraDoneCount(){ const h=catOf('hira'); return h.chars.filter(ch=>state.done&&state.done[dk('hira',ch)]).length; }
 function hiraRemaining(){ const h=catOf('hira'); return h.chars.length - hiraDoneCount(); }
 function vehicleDone(){ const v=catOf('vehicle'); return v && v.chars.every(ch=>state.done&&state.done[dk('vehicle',ch)]); }
-function catUnlocked(key){ const c=catOf(key); if(!c) return true; if(key==='train') return vehicleDone(); if(!c.word) return true; return hiraRemaining()===0; }
+function catUnlocked(key){ const c=catOf(key); if(!c) return true; if(key==='train') return trainCollectCount()>=1; if(!c.word) return true; return hiraRemaining()===0; }
 
 /* 書き順データ: char -> [[x,y,dx,dy], ...]  x,y=画の始点(キャンバス0..1), dx,dy=最初に進む向き */
 const STROKES={
@@ -516,11 +521,13 @@ const TRAIN_BY_YOMI={}; TRAIN_LINES.forEach(l=>{ TRAIN_BY_YOMI[l.yomi]=l; });
 CATS.push({ key:'train', label:'でんしゃ', ex:'🚃', color:'#4a7fe0', lang:'ja-JP', word:true, train:true,
   chars:TRAIN_LINES.map(l=>l.yomi), say:c=>c,
   img:(function(){ const m={}; TRAIN_LINES.forEach(l=>{ m[l.yomi]=TRAINIMG[l.name]; }); return m; })() });
-/* ごほうびの顔つき電車: 最初3本 → 各カテゴリで5こクリアするごとに+1本 解放
-   （あいうえお→1本、かきくけこ→1本、アイウエオ→1本、カキクケコ→1本…）。解放済みを順番に循環（かぶらない） */
+/* でんしゃコレクション: もじ等を5こクリアするごとに 顔つき電車が2本ずつ なかまいり
+   （あいうえお→2本、かきくけこ→2本、アイウエオ→2本…。でんしゃ自身はカウントに含めない）。
+   でんしゃ画面のタイルも この本数ぶんだけ 解放され、ごほうびも同じ集合を循環（かぶらない） */
 function catDoneCount(key){ const c=catOf(key); return c?c.chars.filter(ch=>state.done&&state.done[dk(key,ch)]).length:0; }
-function unlockCountRaw(){ let n=3; CATS.forEach(c=>{ n+=Math.floor(catDoneCount(c.key)/5); }); return n; }
-function unlockedTrains(){ return TRAIN_LINES.slice(0, Math.min(TRAIN_LINES.length, unlockCountRaw())); }
+function trainRawCount(){ let n=0; CATS.forEach(c=>{ if(c.key==='train') return; n+=2*Math.floor(catDoneCount(c.key)/5); }); return n; }
+function trainCollectCount(){ return Math.min(TRAIN_LINES.length, trainRawCount()); }
+function unlockedTrains(){ return TRAIN_LINES.slice(0, trainCollectCount()); }
 function nextRewardLine(){
   const pool=unlockedTrains(); if(!pool.length) return TRAIN_LINES[0]||JR_LINES[0];
   const i=(state.trainRot||0)%pool.length; state.trainRot=((state.trainRot||0)+1)%100000; saveState();
@@ -705,7 +712,7 @@ function renderCats(){
   const btns=CATS.map(c=>{
     const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
     if(!catUnlocked(c.key)){
-      const hint = c.key==='train' ? 'のりものを ぜんぶ クリアで つかえるよ' : `あいうえおを あと ${hiraRemaining()}もじで つかえるよ`;
+      const hint = c.key==='train' ? 'あいうえおを 5こ クリアすると でんしゃが もらえるよ' : `あいうえおを あと ${hiraRemaining()}もじで つかえるよ`;
       return `<button class="catbtn locked" data-k="${c.key}" style="background:${c.color}">
         <span>🔒 ${c.label}<br><small>${hint}</small></span>
         <span class="ex">🔒</span>
@@ -738,9 +745,13 @@ function renderCats(){
 function renderGrid(key){
   const cat=catOf(key);
   const doneChars=cat.chars.filter(ch=>state.done[dk(key,ch)]);
-  const cells=cat.chars.map(ch=>{
+  const tc=cat.train?trainCollectCount():0;
+  const cells=cat.chars.map((ch,idx)=>{
     const d=state.done[dk(key,ch)];
     if(cat.train){
+      if(idx>=tc){
+        return `<div class="cc train locked" data-c="${ch}"><span class="cc-lock">🔒</span><span class="cc-word">？？？</span></div>`;
+      }
       return `<div class="cc train ${d?'done':''}" data-c="${ch}"><img class="cc-train" src="${cat.img[ch]}" alt=""><span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
     }
     if(cat.word){
@@ -759,7 +770,10 @@ function renderGrid(key){
     <div class="scroll"><div class="cgrid${cat.train?' traingrid':(cat.word?' wordgrid':'')}">${cells}</div></div>
   </div>`;
   $('#back').onclick=renderCats;
-  app.querySelectorAll('.cc').forEach(el=>el.onclick=()=>renderTrace(key, el.dataset.c));
+  app.querySelectorAll('.cc').forEach(el=>el.onclick=()=>{
+    if(el.classList.contains('locked')){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); try{speak('もっと なぞると でてくるよ','ja-JP');}catch(e){} return; }
+    renderTrace(key, el.dataset.c);
+  });
 }
 
 
@@ -1298,18 +1312,20 @@ function renderComplete(key, ch, isNew){
     ? `<div class="badge-won grand">🏆<div>ぜんぶ できた！<small>でんしゃ はかせ にんてい！</small></div></div>`
     : justBadge
     ? `<div class="badge-won">🏅<div>「${cat.label}」ぜんぶ できた！<small>メダル ゲット！</small></div></div>` : '';
-  // カテゴリ内で5こクリアするごとに あたらしい顔つき電車が1本なかまいり（あいうえお→1本、アイウエオ→1本…）
+  // もじ等を5こクリアするごとに あたらしい顔つき電車が2本なかまいり（あいうえお→2本、アイウエオ→2本…）
   let trainUnlockHtml='';
-  if(isNew){
+  if(isNew && key!=='train'){
     const dc=catDoneCount(key);
     const crossed=Math.floor(dc/5)>Math.floor(Math.max(0,dc-1)/5);
-    const raw=unlockCountRaw();
-    const nowN=Math.min(TRAIN_LINES.length, raw);
-    const prevN=Math.min(TRAIN_LINES.length, raw-(crossed?1:0));
-    const gained=TRAIN_LINES.slice(prevN,nowN);
-    if(gained.length){
-      const pics=gained.map(l=>`<img src="${TRAINIMG[l.name]}" style="height:38px; width:auto;" alt="">`).join('');
-      trainUnlockHtml=`<div class="badge-won">🚃<div>あたらしい でんしゃ が なかまいり！<br>${pics}</div></div>`;
+    if(crossed){
+      const rawNow=trainRawCount();
+      const nowN=Math.min(TRAIN_LINES.length, rawNow);
+      const prevN=Math.min(TRAIN_LINES.length, Math.max(0, rawNow-2));
+      const gained=TRAIN_LINES.slice(prevN,nowN);
+      if(gained.length){
+        const pics=gained.map(l=>`<img src="${TRAINIMG[l.name]}" style="height:38px; width:auto;" alt="">`).join('');
+        trainUnlockHtml=`<div class="badge-won">🚃<div>あたらしい でんしゃ が ${gained.length}りょう なかまいり！<br>${pics}</div></div>`;
+      }
     }
   }
   // あいうえお 全クリア → のりもの・こんちゅう 等 解放

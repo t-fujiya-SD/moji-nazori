@@ -1,4 +1,4 @@
-const CACHE = 'moji-nazori-v6';
+const CACHE = 'moji-nazori-v7';
 const CORE = ['moji-nazori.html', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-180.png'];
 
 self.addEventListener('install', function (e) {
