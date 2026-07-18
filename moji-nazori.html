@@ -103,6 +103,9 @@
   .cc .ck{position:absolute; top:-8px; right:-8px; font-size:22px;}
   /* word cells (ことば mode) */
   .cgrid.wordgrid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); max-width:560px;}
+  /* 拗音は3列＝1行が きゃ・きゅ・きょ の1グループ */
+  .cgrid.yogrid{grid-template-columns:repeat(3,1fr); max-width:420px;}
+  .cc.yo{aspect-ratio:auto; padding:16px 6px; font-size:30px; letter-spacing:-1px;}
   .cc.word{aspect-ratio:auto; flex-direction:column; gap:2px; padding:12px 6px;}
   .cc.word .cc-emo{font-size:36px; line-height:1;}
   .cc.word .cc-word{font-size:17px; font-weight:800; color:var(--ink);}
@@ -278,6 +281,13 @@ const CATS=[
     chars:['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト','ナ','ニ','ヌ','ネ','ノ','ハ','ヒ','フ','ヘ','ホ','マ','ミ','ム','メ','モ','ヤ','ユ','ヨ','ラ','リ','ル','レ','ロ','ワ','ヲ','ン'],
     gapAfter:['ヤ','ユ'],   /* 五十音の行をそろえる: ヤ■ユ■ヨ */
     say:c=>c },
+  /* 拗音（ちいさい ゃゅょ）。2文字なので判定は単語エンジン(word)、表示は3列＝1行1グループ */
+  { key:'youon', label:'ようおん（ひらがな）', ex:'きゃ', color:'#2fa39a', lang:'ja-JP', word:true, youon:true, needs:'hira',
+    chars:['きゃ','きゅ','きょ','しゃ','しゅ','しょ','ちゃ','ちゅ','ちょ','にゃ','にゅ','にょ','ひゃ','ひゅ','ひょ','みゃ','みゅ','みょ','りゃ','りゅ','りょ','ぎゃ','ぎゅ','ぎょ','じゃ','じゅ','じょ','びゃ','びゅ','びょ','ぴゃ','ぴゅ','ぴょ'],
+    say:c=>c },
+  { key:'youonk', label:'ようおん（カタカナ）', ex:'キャ', color:'#e07b2f', lang:'ja-JP', word:true, youon:true, needs:'kata',
+    chars:['キャ','キュ','キョ','シャ','シュ','ショ','チャ','チュ','チョ','ニャ','ニュ','ニョ','ヒャ','ヒュ','ヒョ','ミャ','ミュ','ミョ','リャ','リュ','リョ','ギャ','ギュ','ギョ','ジャ','ジュ','ジョ','ビャ','ビュ','ビョ','ピャ','ピュ','ピョ'],
+    say:c=>c },
   // ことば（絵を見ながら なぞる）
   { key:'fruit', label:'くだもの・やさい', ex:'🍎🥕', color:'#ff6f61', lang:'ja-JP', word:true,
     items:[['りんご','🍎'],['みかん','🍊'],['バナナ','🍌'],['ぶどう','🍇'],['いちご','🍓'],['もも','🍑'],['さくらんぼ','🍒'],['すいか','🍉'],['メロン','🍈'],['パイナップル','🍍'],['レモン','🍋'],['キウイ','🥝'],['マンゴー','🥭'],['なし','🍐'],['ブルーベリー','🫐'],['ココナッツ','🥥'],['にんじん','🥕'],['トマト','🍅'],['なす','🍆'],['とうもろこし','🌽'],['じゃがいも','🥔'],['さつまいも','🍠'],['ピーマン','🫑'],['きゅうり','🥒'],['ブロッコリー','🥦'],['キャベツ','🥬'],['たまねぎ','🧅'],['にんにく','🧄'],['きのこ','🍄'],['とうがらし','🌶️'],['アボカド','🥑'],['かぼちゃ','🎃'],['えだまめ','🫛'],['ピーナッツ','🥜'],['だいこん',''],['ねぎ',''],['ごぼう',''],['れんこん',''],['かき','']] },
@@ -297,7 +307,10 @@ function picOf(cat,ch){ return (cat&&cat.pic&&cat.pic[ch])||''; }
 function hiraDoneCount(){ const h=catOf('hira'); return h.chars.filter(ch=>state.done&&state.done[dk('hira',ch)]).length; }
 function hiraRemaining(){ const h=catOf('hira'); return h.chars.length - hiraDoneCount(); }
 function vehicleDone(){ const v=catOf('vehicle'); return v && v.chars.every(ch=>state.done&&state.done[dk('vehicle',ch)]); }
-function catUnlocked(key){ const c=catOf(key); if(!c) return true; if(key==='train') return trainCollectCount()>=1; if(!c.word) return true; return hiraRemaining()===0; }
+function catRemaining(key){ const c=catOf(key); return c?c.chars.filter(x=>!(state.done&&state.done[dk(key,x)])).length:0; }
+function catUnlocked(key){ const c=catOf(key); if(!c) return true; if(key==='train') return trainCollectCount()>=1;
+  if(c.needs) return catRemaining(c.needs)===0;   /* 拗音は もとの五十音を ぜんぶ クリアしてから */
+  if(!c.word) return true; return hiraRemaining()===0; }
 
 /* 書き順データ: char -> [[x,y,dx,dy], ...]  x,y=画の始点(キャンバス0..1), dx,dy=最初に進む向き */
 const STROKES={
@@ -735,7 +748,9 @@ function renderCats(){
   const btns=CATS.map(c=>{
     const total=c.chars.length, done=c.chars.filter(ch=>state.done[dk(c.key,ch)]).length;
     if(!catUnlocked(c.key)){
-      const hint = c.key==='train' ? 'あいうえおを 5こ クリアすると でんしゃが もらえるよ' : `あいうえおを あと ${hiraRemaining()}もじで つかえるよ`;
+      const hint = c.key==='train' ? 'あいうえおを 5こ クリアすると でんしゃが もらえるよ'
+                 : c.needs ? `${catOf(c.needs).label}を あと ${catRemaining(c.needs)}もじで つかえるよ`
+                 : `あいうえおを あと ${hiraRemaining()}もじで つかえるよ`;
       return `<button class="catbtn locked" data-k="${c.key}" style="background:${c.color}">
         <span>🔒 ${c.label}<br><small>${hint}</small></span>
         <span class="ex">🔒</span>
@@ -777,6 +792,9 @@ function renderGrid(key){
       }
       return `<div class="cc train ${d?'done':''}" data-c="${ch}"><img class="cc-train" src="${cat.img[ch]}" alt=""><span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
     }
+    if(cat.youon){
+      return `<div class="cc yo ${d?'done':''}" data-c="${ch}">${ch}${d?'<span class="ck">⭐️</span>':''}</div>`;
+    }
     if(cat.word){
       const pic=picOf(cat,ch);
       return `<div class="cc word ${d?'done':''}" data-c="${ch}">${pic?`<span class="cc-emo">${pic}</span>`:''}<span class="cc-word">${ch}</span>${d?'<span class="ck">⭐️</span>':''}</div>`;
@@ -792,7 +810,7 @@ function renderGrid(key){
       <div class="count">${doneChars.length} / ${cat.chars.length}</div>
     </div>
     <div class="ctrain">${collectionTrainHtml(false)}</div>
-    <div class="scroll"><div class="cgrid${cat.train?' traingrid':(cat.word?' wordgrid':'')}">${cells}</div></div>
+    <div class="scroll"><div class="cgrid${cat.train?' traingrid':(cat.youon?' yogrid':(cat.word?' wordgrid':''))}">${cells}</div></div>
   </div>`;
   $('#back').onclick=renderCats;
   app.querySelectorAll('.cc').forEach(el=>el.onclick=()=>{
@@ -957,7 +975,7 @@ function renderTrace(key, ch){
   const cat=catOf(key);
   const isWord=!!cat.word;
   const pic=isWord?picOf(cat,ch):'';
-  const acceptLine=isWord?0.45:0.6;   // ✓「できた」で認める塗り割合（手動判定なのでやさしめ）
+  const acceptLine=isWord?0.25:0.45;  // ✓「できた」で認める塗り割合（手動判定なので幼児にやさしく）
   const kvgD = (key==='hira' && typeof HKVG!=='undefined' && HKVG[ch]) ? HKVG[ch]
              : (key==='kata' && typeof KKVG!=='undefined' && KKVG[ch]) ? KKVG[ch] : null;
   const canWatch = !!kvgD || (typeof STROKEPATH!=='undefined' && !!STROKEPATH[ch]);
@@ -1013,16 +1031,19 @@ function renderTrace(key, ch){
     availW=Math.max(200,availW); availH=Math.max(200,availH);
     const FF=(s)=>'bold '+s+'px "Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif';
     if(isWord && ch.length>1){
-      // 長い言葉：横に大きいキャンバスにして一文字を大きく（幼児が書ける広さ）
-      side=Math.min(availH, 640);
-      baseOff=side*0.04;
-      let fs=side*0.62;
+      // 長い言葉：文字をできるだけ大きく＋キャンバスは文字の大きさに合わせる。
+      // （高さを固定にすると余白だらけになり、なぞれた割合が端末の向きで激変して
+      //   「✓できた」が通らなくなる。基礎の1文字と同じ比率に揃えるのが狙い）
+      const maxH=Math.min(availH, 640);
+      let fs=maxH*0.62;
       const oc=document.createElement('canvas').getContext('2d');
       oc.font=FF(fs); let w=oc.measureText(ch).width||1;
-      const pad=side*0.5;
-      if(w+pad<=availW){ cw=Math.max(side, w+pad); }
-      else { const maxW=Math.max(120, availW-pad); fs=Math.floor(fs*maxW/w); oc.font=FF(fs); w=oc.measureText(ch).width||1; cw=availW; }
+      const padW=fs*0.5;
+      if(w+padW>availW){ const maxW=Math.max(120, availW-padW); fs=Math.max(28, Math.floor(fs*maxW/w)); oc.font=FF(fs); w=oc.measureText(ch).width||1; }
       fontSize=fs;
+      side=Math.max(150, Math.min(availH, Math.round(fs*1.5)));
+      baseOff=side*0.04;
+      cw=Math.max(side, Math.min(availW, Math.round(w+fs*0.6)));
     } else {
       side=cw=Math.min(availW,availH);
       if(!useKvg){ fontSize=side*0.72; baseOff=side*0.04; }
